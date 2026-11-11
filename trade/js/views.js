@@ -102,7 +102,7 @@ function positionCard(t, rU, money, i) {
   const sign = (v) => (v > 0.005 ? '+' : v < -0.005 ? '−' : '');
   const ratioText = ratio == null ? '—' : `1 : ${sign(ratio)}${Math.abs(ratio).toFixed(1)}`;
   const pctText = pct == null ? '' : ` · ${sign(pct)}${Math.abs(pct).toFixed(1)}%`;
-  return `<button type="button" class="card pos a-rise" style="animation-delay:${240 + i * 70}ms" data-act="open-trade" data-id="${esc(t.id)}">
+  return `<button type="button" class="card pos a-rise" style="animation-delay:${120 + Math.min(i, 5) * 50}ms" data-act="open-trade" data-id="${esc(t.id)}">
     <div class="row between">
       <div class="stack">
         <div class="row gap8 mid-align"><span class="num-badge" aria-label="第 ${i + 1} 隻">${i + 1}</span><b class="sym">${esc(t.sym)}</b><span class="tag">${esc(t.setup || '')}</span>${t.side === 'short' ? '<span class="tag red">做淡</span>' : ''}</div>
@@ -172,24 +172,36 @@ const WARN = {
   targetSide: ['warn', (r, f) => (f.side === 'short' ? '做淡嘅話，目標價要低過入市價。' : '做好嘅話，目標價要高過入市價。')],
   heat: ['bad', (r, f, ctx) => `Open heat 得返 ${ctx.leftR.toFixed(2)}R 位，已經自動減細到 ${r.shares} 股。`],
   zero: ['bad', () => '計出嚟係 0 股：風險預算唔夠買一股，或者 open heat 已經爆滿。'],
-  cash: ['bad', (r, f, ctx) => `需要 ${ctx.money(r.cost)}，但可用現金得 ${ctx.money(ctx.cash)}。`],
-  concentration: ['warn', (r) => `呢單佔本金 ${(r.costPct * 100).toFixed(0)}%，止蝕好窄，小心集中風險。`],
+  heatOver: ['bad', (r, f, ctx) => `呢個股數會令 open heat 去到 ${(ctx.heat + ctx.shares * r.per / ctx.rU).toFixed(2)}R，超過 ${ctx.cap}R 上限。`],
+  cash: ['bad', (r, f, ctx) => `需要 ${ctx.money(ctx.shares * r.entry)}，但可用現金得 ${ctx.money(ctx.cash)}。`],
+  concentration: ['warn', (r, f, ctx) => `呢單佔本金 ${((ctx.shares * r.entry) / ctx.capital * 100).toFixed(0)}%，小心集中風險。`],
 };
 
 export function calcResult(state, f) {
-  const money = moneyFmt(state), rU = C.rUnit(state), heat = C.heatR(state);
+  const money = moneyFmt(state), rU = C.rUnit(state), heat = C.heatR(state), capital = C.capital(state);
   const r = sizing(state, f);
+  const typed = f.shares !== '' && f.shares != null;
+  const own = typed ? Math.floor(Number(f.shares)) : null;
   const msgs = [];
+  if (typed && !(own > 0)) msgs.push(['bad', '實際股數要大過 0。']);
   if (!r.ok) {
     msgs.push(r.error === 'missing' ? ['warn', '入咗入市價同止蝕價就會計到。']
       : r.error === 'noCapital' ? ['bad', '未設定本金，去「設定」入咗先。']
       : ['bad', f.side === 'short' ? '做淡嘅話，止蝕價要高過入市價。' : '做好嘅話，止蝕價要低過入市價。']);
   } else {
-    const ctx = { money, cash: C.cash(state), leftR: Math.max(0, state.settings.heatCapR - heat) };
-    for (const w of r.warnings) msgs.push([WARN[w][0], WARN[w][1](r, f, ctx)]);
+    const leftR = Math.max(0, state.settings.heatCapR - heat), cashAvail = C.cash(state);
+    const shares = own > 0 ? own : r.shares;
+    const ctx = { money, cash: cashAvail, leftR, heat, rU, capital, cap: state.settings.heatCapR, shares };
+    r.entry = parseFloat(f.entry);
+    // With a typed share count, re-check that count; the suggestion's own size warnings no longer apply.
+    const codes = own > 0
+      ? [...r.warnings.filter((w) => w === 'lowRR' || w === 'targetSide'),
+         ...C.checkShares({ shares: own, entry: r.entry, per: r.per, side: f.side, rU, heatLeftR: leftR, cashAvail, cap: capital })]
+      : r.warnings;
+    for (const w of codes) msgs.push([WARN[w][0], WARN[w][1](r, f, ctx)]);
     if (!msgs.length) msgs.push(['ok', '全部檢查通過，可以入單。']);
   }
-  const shares = r.ok ? (f.shares !== '' && f.shares != null ? Number(f.shares) : r.shares) : null;
+  const shares = r.ok ? (own > 0 ? own : r.shares) : null;
   const riskAmt = r.ok ? shares * r.per : 0;
   return `<div class="row between end">
       <div class="stack"><span class="label">建議買入</span><b class="huge">${r.ok ? `${r.shares} 股` : '—'}</b></div>
@@ -198,24 +210,30 @@ export function calcResult(state, f) {
     <div class="two">
       <div class="cell"><span>風險金額</span><b>${r.ok ? `${money(riskAmt)} · ${(riskAmt / rU).toFixed(2)}R` : '—'}</b></div>
       <div class="cell"><span>每股風險</span><b>${r.ok ? price(r.per) : '—'}</b></div>
-      <div class="cell"><span>需要資金</span><b>${r.ok ? `${money(shares * parseFloat(f.entry))} · ${((shares * parseFloat(f.entry)) / C.capital(state) * 100).toFixed(0)}%` : '—'}</b></div>
+      <div class="cell"><span>需要資金</span><b>${r.ok ? `${money(shares * parseFloat(f.entry))} · ${((shares * parseFloat(f.entry)) / capital * 100).toFixed(0)}%` : '—'}</b></div>
       <div class="cell"><span>開單後 open heat</span><b>${r.ok ? `${(heat + riskAmt / rU).toFixed(2)}R / ${state.settings.heatCapR}R` : '—'}</b></div>
     </div>
+    ${r.ok && own > 0 && own !== r.shares ? `<span class="hint">以上按你填嘅 ${own} 股計，唔係建議嘅 ${r.shares} 股。</span>` : ''}
     <label class="field">實際買入股數（唔填就用建議股數）<input data-f="shares" type="number" inputmode="numeric" step="1" min="1" placeholder="${r.ok ? r.shares : ''}" value="${esc(num(f.shares))}"></label>
     ${msgs.map(([tone, text]) => `<div class="note ${tone}">${esc(text)}</div>`).join('')}`;
 }
 
 /* ---------- Trade log ---------- */
 
-export function log(state) {
+export const LOG_PAGE = 50;
+
+export function log(state, ui) {
   const closed = C.closedTrades(state), st = C.stats(closed);
+  const limit = (ui && ui.logLimit) || LOG_PAGE;
+  const shown = closed.slice(-limit).reverse();
+  const more = closed.length - shown.length;
   if (!closed.length) return `<div class="cards"><div class="empty span2">未有已平倉嘅交易。喺總覽撳一個持倉就可以平倉。</div></div>`;
   return `<div class="cards">
     <section class="tiles two-up span2">
       ${tile('平均贏', C.fmtR(st.avgWin), 'var(--green)')}
       ${tile('平均輸', C.fmtR(st.avgLoss), 'var(--red)')}
     </section>
-    ${closed.slice().reverse().map((t) => {
+    ${shown.map((t) => {
       const r = C.tradeR(t), c = C.rColor(r);
       const note = (t.mistakes || []).length ? t.mistakes.join('、') : '跟足計劃';
       return `<button type="button" class="card logrow" data-act="open-trade" data-id="${esc(t.id)}">
@@ -224,6 +242,7 @@ export function log(state) {
         <b class="rbadge" style="background:${c.bg};color:${c.fg}">${C.fmtR(r)}</b>
       </button>`;
     }).join('')}
+    ${more > 0 ? `<button type="button" class="ghost span2" data-act="log-more">顯示多 ${Math.min(LOG_PAGE, more)} 單（仲有 ${more} 單）</button>` : ''}
   </div>`;
 }
 
@@ -264,7 +283,7 @@ export function analysis(state, ui) {
     <section class="card a-rise donut-card" style="animation-delay:140ms">
       ${G.donut(st.winRate)}
       <div class="kv">
-        <div><span>贏 / 輸</span><b>${st.wins} / ${st.losses}</b></div>
+        <div><span>贏 / 輸${st.breakeven ? ' / 打和' : ''}</span><b>${st.wins} / ${st.losses}${st.breakeven ? ` / ${st.breakeven}` : ''}</b></div>
         <div><span>平均贏</span><b style="color:var(--green)">${C.fmtR(st.avgWin)}</b></div>
         <div><span>平均輸</span><b style="color:var(--red)">${C.fmtR(st.avgLoss)}</b></div>
         <div><span>每單期望</span><b>${C.fmtR(st.expectancy)}</b></div>
