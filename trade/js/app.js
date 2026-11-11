@@ -189,7 +189,7 @@ const actions = {
   'set-capital'() {
     const v = parseFloat($('#ob-capital').value);
     if (!(v > 0)) { toast('入一個大過 0 嘅本金。'); return; }
-    act((s) => { s.settings.startCapital = v; });
+    act((s) => { s.settings.startCapital = v; s.settings.statsFrom = today(); });
     render({ animate: true });
   },
   'load-demo'() {
@@ -221,6 +221,7 @@ const actions = {
   'save-trade': saveTrade,
 
   range(el) { ui.range = el.dataset.v; render(); },
+  curve(el) { ui.curveRange = el.dataset.v; render(); },
   cal(el) {
     const d = new Date(Number(el.dataset.y), Number(el.dataset.m) + Number(el.dataset.v), 1);
     ui.cal = { y: d.getFullYear(), m: d.getMonth() };
@@ -331,8 +332,9 @@ main.addEventListener('change', async (e) => {
   }
   if (el.dataset.s) {
     const k = el.dataset.s;
-    const v = k === 'finnhubKey' ? el.value.trim() : parseFloat(el.value);
-    if (k !== 'finnhubKey' && !(v > 0)) { toast('要入一個大過 0 嘅數。'); render(); return; }
+    const text = k === 'finnhubKey' || k === 'statsFrom';
+    const v = text ? el.value.trim() : parseFloat(el.value);
+    if (!text && !(v > 0)) { toast('要入一個大過 0 嘅數。'); render(); return; }
     act((s) => { s.settings[k] = v; });
     if (k === 'defaultRiskMult') ui.form.riskMult = v;
     render();

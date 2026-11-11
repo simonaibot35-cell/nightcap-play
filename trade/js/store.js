@@ -4,6 +4,7 @@ export const STORAGE_KEY = 'tradelog.v1';
 
 export const DEFAULT_SETTINGS = {
   startCapital: 0,
+  statsFrom: null,       // YYYY-MM-DD: win rate and expectancy on the dashboard count from here ('' = all)
   riskPct: 1,            // 1R = 1% of current capital
   defaultRiskMult: 0.5,  // default risk per trade, in R
   heatCapR: 5,           // max total open risk, in R
@@ -21,10 +22,13 @@ export function emptyState() {
 // Accepts anything parsed from storage/import and returns a well-formed state, or null if unusable.
 export function normalize(raw) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.trades)) return null;
+  const settings = { ...DEFAULT_SETTINGS, ...(raw.settings || {}) };
+  // Records made before this setting existed start counting from the day it first loads.
+  if (settings.statsFrom == null) settings.statsFrom = today();
   return {
     v: 1,
     updatedAt: Number(raw.updatedAt) || 0,
-    settings: { ...DEFAULT_SETTINGS, ...(raw.settings || {}) },
+    settings,
     cashflows: Array.isArray(raw.cashflows) ? raw.cashflows : [],
     trades: raw.trades,
   };
@@ -38,9 +42,12 @@ export function today() {
 }
 
 export function createStore(storage = globalThis.localStorage) {
-  let state = emptyState();
+  let state = normalize(emptyState());
+  let fillDate = false;
   try {
-    state = normalize(JSON.parse(storage.getItem(STORAGE_KEY))) || state;
+    const raw = JSON.parse(storage.getItem(STORAGE_KEY));
+    fillDate = !!raw && raw.settings && raw.settings.statsFrom == null;
+    state = normalize(raw) || state;
   } catch { /* corrupt or missing: start empty */ }
 
   const listeners = new Set();
@@ -48,6 +55,8 @@ export function createStore(storage = globalThis.localStorage) {
     try { storage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* storage full or blocked */ }
   };
   const emit = (origin) => listeners.forEach((fn) => fn(state, origin));
+  // Save the filled-in start date without touching updatedAt, so sync still treats the cloud copy fairly.
+  if (fillDate) persist();
 
   return {
     get: () => state,
@@ -91,7 +100,9 @@ export function demoState() {
   ];
   const state = emptyState();
   state.settings.startCapital = 50000;
+  state.settings.statsFrom = '';
   let cap = 50000;
+  const confs = [4, 2, 3, 3, 1, 5, 2, 5, 3, 4, 2, 5, 4, 1, 3, 2, 4, 2, 5, 3, 4, 2, 1, 3];
   rows.forEach(([sym, setup, r, mistakes], i) => {
     const date = weekdays[i];
     const rValue = cap * 0.01;
@@ -101,7 +112,7 @@ export function demoState() {
     const exit = entry + pnl / shares;
     cap += pnl;
     state.trades.push({
-      id: `demo${i}`, sym, side: 'long', setup, checks: ['趨勢向上'], reason: '示範交易', conf: 3,
+      id: `demo${i}`, sym, side: 'long', setup, checks: ['趨勢向上'], reason: '示範交易', conf: confs[i],
       entryDate: date, entry, shares, initStop: stop, stop, target: 115, riskMult: 0.5, rValue,
       exits: [{ date, price: exit, shares }], fees: 0, mistakes, notes: '', lastPrice: null, lastPriceAt: 0,
     });

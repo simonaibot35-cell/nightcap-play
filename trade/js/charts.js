@@ -15,8 +15,8 @@ function curveGeometry(vals, W, H) {
   return { line, area: `${line} L${last[0].toFixed(1)} ${H} L10 ${H} Z`, zeroY: yOf(0).toFixed(1), last };
 }
 
-export function equityCurve(cum, { height = 130, color = 'var(--blue)', label = '累積 R 資金曲線' } = {}) {
-  if (cum.length < 2) return emptyChart('平倉咗第一單之後，呢度就會有資金曲線。');
+export function equityCurve(cum, { height = 130, color = 'var(--blue)', label = '累積 R 資金曲線', empty = '平倉咗第一單之後，呢度就會有資金曲線。' } = {}) {
+  if (cum.length < 2) return emptyChart(empty);
   const W = 324, g = curveGeometry(cum, W, height);
   return `<svg class="chart" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(label)}">
     <line x1="0" y1="${g.zeroY}" x2="${W}" y2="${g.zeroY}" stroke="var(--line-strong)" stroke-dasharray="3 4"/>
@@ -76,15 +76,6 @@ export function hBars(groups, { color } = {}) {
     </div>`).join('');
 }
 
-export function weekdayBars(days) {
-  const sc = barScale(days.map((d) => d.total), 80);
-  return `<div class="wd-bars">${days.map((d, i) => `<div class="wd-col">
-      <b style="color:${signColor(d.total)}">${fmtR(d.total, 1)}</b>
-      ${column(d.total, sc)}
-      <span>${WEEKDAYS[i]}</span>
-    </div>`).join('')}</div>`;
-}
-
 // Month grid, Monday to Friday only.
 export function calendar(year, month, totalsByDate) {
   const cells = [];
@@ -105,7 +96,7 @@ export function calendar(year, month, totalsByDate) {
   return `<div class="cal-head">${WEEKDAYS.map((w) => `<span>${w}</span>`).join('')}</div><div class="cal-grid">${cells.join('')}</div>`;
 }
 
-// CSS 3D bar grid: setups down, weekdays across. Rotated by dragging (see app.js).
+// CSS 3D bar grid: setups down, confidence 1-5 across. Rotated by dragging (see app.js).
 export function chart3d(grid, rot) {
   const rows = grid.length;
   if (!rows) return emptyChart('未有數據。');
@@ -128,12 +119,13 @@ export function chart3d(grid, rot) {
       <i style="width:${B}px;height:${B}px;transform:translateZ(${h}px);background:${top}"></i>
     </div>`;
   })).join('');
-  const bestLabel = best && best.v > 0.005 ? `最賺：${esc(best.setup)} × 星期${WEEKDAYS[best.wi]} ${fmtR(best.v, 1)}` : '未有賺錢嘅組合';
+  const bestLabel = best && best.v > 0.005 ? `最賺：${esc(best.setup)} × 信心 ${best.wi + 1} ${fmtR(best.v, 1)}` : '未有賺錢嘅組合';
   return `<div class="scene3d" id="scene3d" role="img" aria-label="${bestLabel}">
     <div class="tilt3d"><div class="a-spin3d p3d"><div class="p3d" id="rot3d" style="transform:rotateZ(${rot}deg)">
       <div class="floor3d" style="left:${-W / 2}px;top:${-D / 2}px;width:${W}px;height:${D}px;background-size:${CW}px ${CD}px">
         ${bars}
-        <div class="ax3-x" style="top:${D + 6}px;width:${W}px">${WEEKDAYS.map((w) => `<span>${w}</span>`).join('')}</div>
+        <div class="ax3-x" style="top:${D + 6}px;width:${W}px">${[1, 2, 3, 4, 5].map((n) => `<span>${n}</span>`).join('')}</div>
+        <div class="ax3-t" style="top:${D + 24}px;width:${W}px">信心</div>
         <div class="ax3-y" style="height:${D}px;grid-template-rows:repeat(${rows},minmax(0,1fr))">${grid.map((g) => `<span>${esc(g.setup)}</span>`).join('')}</div>
       </div>
     </div></div></div>

@@ -38,8 +38,13 @@ export function dashboard(state, ui) {
   const heatColor = heatPct >= 1 ? 'var(--red)' : heatPct >= 0.8 ? 'var(--amber)' : 'var(--blue)';
   const leftR = Math.max(0, heatCap - heat), mult = state.settings.defaultRiskMult;
   const closed = C.closedTrades(state);
-  const month = C.stats(closed.filter((t) => C.closeDate(t) >= daysAgo(30)));
-  const all = C.stats(closed);
+  const from = state.settings.statsFrom || '';
+  const since = C.stats(closed.filter((t) => C.closeDate(t) >= from));
+  const netRisk = C.openRiskTotal(state);
+  const CURVE = { week: ['週', '本週'], month: ['月', '本月'], year: ['年', '今年'] };
+  const cr = CURVE[ui.curveRange] ? ui.curveRange : 'month';
+  const curveFrom = C.periodStart(cr);
+  const curve = C.stats(closed.filter((t) => C.closeDate(t) >= curveFrom));
   const open = C.openTrades(state);
   const live = !!state.settings.finnhubKey;
 
@@ -56,14 +61,19 @@ export function dashboard(state, ui) {
     </section>
 
     <section class="tiles a-rise" style="animation-delay:80ms">
-      ${tile('30 日總 R', C.fmtR(month.total, 1), month.total >= 0 ? 'var(--green)' : 'var(--red)')}
-      ${tile('30 日勝率', month.n ? `${Math.round(month.winRate * 100)}%` : '—')}
-      ${tile('30 日期望', month.n ? C.fmtR(month.expectancy) : '—')}
+      ${tile('Open risk', open.length ? C.fmtR(netRisk) : '—', open.length ? C.rColor(netRisk).fg : '')}
+      ${tile('勝率', since.n ? `${Math.round(since.winRate * 100)}%` : '—')}
+      ${tile('每單期望', since.n ? C.fmtR(since.expectancy) : '—')}
     </section>
+    <span class="hint span2 tiles-note">Open risk = 全部持倉而家打中止蝕會賺蝕幾多 R · 勝率同期望${from ? `由 ${from} 開始計` : '計晒全部交易'}（${since.n} 單）</span>
 
     <section class="card a-rise span2" style="animation-delay:160ms">
-      <div class="row between base"><b class="h3">資金曲線（累積 R）</b><span class="hint">${all.n} 單 · 最高 ${C.fmtR(all.peak, 1)}</span></div>
-      ${G.equityCurve(all.cum)}
+      <div class="row between mid-align">
+        <div class="stack"><b class="h3">資金曲線（累積 R）</b><span class="hint">只計已平倉 · ${curve.n} 單 · 總 <b style="color:${C.rColor(curve.total).fg}">${C.fmtR(curve.total, 1)}</b></span></div>
+        <div class="row gap6">${Object.entries(CURVE).map(([k, [l]]) => chip(l, cr === k, `data-act="curve" data-v="${k}" aria-label="${CURVE[k][1]}"`, ' sm')).join('')}</div>
+      </div>
+      ${G.equityCurve(curve.cum, { empty: `${CURVE[cr][1]}未有平倉嘅交易。` })}
+      ${curve.n ? `<div class="row between hint"><span>${curveFrom}</span><span>${today()}</span></div>` : ''}
     </section>
 
     <div class="row between base span2 section-head">
@@ -91,7 +101,7 @@ function positionCard(t, rU, money, i) {
   return `<button type="button" class="card pos a-rise" style="animation-delay:${240 + i * 70}ms" data-act="open-trade" data-id="${esc(t.id)}">
     <div class="row between">
       <div class="stack">
-        <div class="row gap8 mid-align"><b class="sym">${esc(t.sym)}</b><span class="tag">${esc(t.setup || '')}</span>${t.side === 'short' ? '<span class="tag red">做淡</span>' : ''}</div>
+        <div class="row gap8 mid-align"><span class="num-badge" aria-label="第 ${i + 1} 隻">${i + 1}</span><b class="sym">${esc(t.sym)}</b><span class="tag">${esc(t.setup || '')}</span>${t.side === 'short' ? '<span class="tag red">做淡</span>' : ''}</div>
         <span class="hint">${C.openShares(t)} 股 · 入 ${price(t.entry)} · 止蝕 ${price(t.stop)}</span>
       </div>
       <div class="stack right">
@@ -99,10 +109,6 @@ function positionCard(t, rU, money, i) {
         <span class="hint" style="color:${pnl != null ? fc.fg : 'var(--muted)'}">${pnl != null ? money(pnl, true) : '未有價錢'}</span>
       </div>
     </div>
-    ${t.reason || (t.checks || []).length ? `<div class="reason">
-      <div class="row wrap gap6">${(t.checks || []).map((c) => `<span class="pill">${esc(c)}</span>`).join('')}<span class="pill grey">信心 ${t.conf || '—'}/5</span></div>
-      ${t.reason ? `<p>${esc(t.reason)}</p>` : ''}
-    </div>` : ''}
     <div class="two">
       <div class="badge" style="background:${rc.bg}"><span>Open risk（止蝕位）</span><b style="color:${rc.fg}">${C.fmtR(risk)}</b></div>
       <div class="badge" style="background:${fl != null ? fc.bg : 'var(--inset)'}"><span>浮動 R（現價）</span><b style="color:${fl != null ? fc.fg : 'var(--muted)'}">${fl != null ? C.fmtR(fl) : '—'}</b></div>
@@ -237,10 +243,10 @@ export function analysis(state, ui) {
   return `<div class="cards">${head}
     <section class="card a-rise span2">
       <div class="row between mid-align">
-        <div class="stack"><h2>策略 × 星期幾</h2><span class="hint">柱越高，嗰個組合賺蝕越多 R · 左右掃可以轉</span></div>
+        <div class="stack"><h2>策略 × 信心</h2><span class="hint">信心 1 至 5 分 · 柱越高，嗰個組合賺蝕越多 R · 左右掃可以轉</span></div>
         <div class="row gap6"><button type="button" class="round" data-act="rot" data-v="30" aria-label="向左轉">‹</button><button type="button" class="round" data-act="rot" data-v="-30" aria-label="向右轉">›</button></div>
       </div>
-      ${G.chart3d(C.setupWeekdayGrid(closed, setups), ui.rot)}
+      ${G.chart3d(C.setupConfGrid(closed, setups), ui.rot)}
     </section>
 
     <section class="card a-rise" style="animation-delay:80ms">
@@ -274,7 +280,6 @@ export function analysis(state, ui) {
     </section>
 
     <section class="card a-rise" style="animation-delay:320ms"><h2>按策略分</h2>${G.hBars(C.bySetup(closed).sort((a, b) => b.total - a.total))}</section>
-    <section class="card a-rise" style="animation-delay:380ms"><h2>按星期幾分</h2>${G.weekdayBars(C.byWeekday(closed))}</section>
     <section class="card a-rise" style="animation-delay:440ms">
       <div class="row between base"><h2>犯錯成本</h2><span class="hint">每個壞習慣令你蝕幾多</span></div>
       ${mistakes.length ? G.hBars(mistakes, { color: 'var(--amber)' }) : G.emptyChart('呢段時間冇標記犯錯，好嘢。')}
@@ -297,6 +302,8 @@ export function settings(state, ui) {
         <label class="field">Open heat 上限（R）<input data-s="heatCapR" type="number" inputmode="decimal" step="0.5" min="0.5" value="${s.heatCapR}"></label>
       </div>
       <span class="hint">1R = 當前本金嘅 ${s.riskPct}%。本金 = 起始本金 + 入金出金 + 已平倉盈虧。</span>
+      <label class="field">總覽嘅勝率同期望由幾時開始計<input data-s="statsFrom" type="date" value="${esc(s.statsFrom || '')}"></label>
+      <span class="hint">清空日期就計晒全部交易。</span>
     </section>
 
     <section class="card">

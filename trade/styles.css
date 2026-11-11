@@ -67,6 +67,7 @@ button.card { text-align: left; width: 100%; }
 .dot.live { background: var(--green); }
 
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tiles-note { margin-top: -6px; padding: 0 2px; line-height: 1.45; }
 .tiles.two-up { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
 .tile span { font-size: 11px; color: var(--muted); } .tile b { font-size: 20px; font-weight: 700; }
@@ -78,6 +79,7 @@ button.card { text-align: left; width: 100%; }
 .scale div { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
 
 .pos { border-radius: 16px; padding: 14px; }
+.num-badge { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--blue-bg); color: var(--blue-fg); font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
 .reason { display: flex; flex-direction: column; gap: 6px; background: var(--inset); border-radius: 10px; padding: 10px 12px; }
 .reason p { font-size: 13px; color: var(--sub); line-height: 1.45; overflow-wrap: anywhere; }
 .badge, .cell { border-radius: 10px; padding: 9px 10px; display: flex; flex-direction: column; gap: 2px; }
@@ -94,6 +96,7 @@ button.card { text-align: left; width: 100%; }
 .field input.stop { border-color: #5A2A31; } .field input.target { border-color: #1E4A39; }
 #f-sym { text-transform: uppercase; font-weight: 600; }
 .chip { min-height: 40px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid var(--line-strong); background: var(--inset); color: var(--sub); }
+.chip.sm { min-height: 36px; min-width: 40px; padding: 0 10px; font-size: 13px; }
 .chip.block { border-radius: 10px; min-height: 44px; padding: 0 6px; }
 .chip.on { background: var(--blue-bg); color: var(--blue-fg); border-color: var(--blue); }
 .check { min-height: 44px; padding: 8px 10px; border-radius: 10px; font-size: 13px; font-weight: 500; text-align: left; display: flex; align-items: center; gap: 8px; border: 1px solid var(--line-strong); background: var(--inset); color: var(--sub); }
@@ -118,14 +121,11 @@ button.card { text-align: left; width: 100%; }
 
 /* ---------- Charts ---------- */
 .chart { width: 100%; height: auto; display: block; }
-.tb-col, .wd-col { display: flex; flex-direction: column; }
+.tb-col { display: flex; flex-direction: column; }
 .tb-up { display: flex; align-items: flex-end; }
 .tb-up i, .tb-down i { display: block; width: 100%; } .tb-up i { background: var(--green); border-radius: 3px 3px 0 0; } .tb-down i { background: var(--red); border-radius: 0 0 3px 3px; }
 .tb-base { height: 1px; background: #3A4552; }
 .trade-bars { display: grid; gap: 3px; }
-.wd-bars { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
-.wd-col { gap: 4px; text-align: center; } .wd-col b { font-size: 12px; } .wd-col span { font-size: 12px; color: var(--muted); }
-.wd-col .tb-up i { border-radius: 5px 5px 0 0; } .wd-col .tb-down i { border-radius: 0 0 5px 5px; }
 .hbar { display: flex; flex-direction: column; gap: 6px; }
 .hbar-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; } .hbar-head em { font-style: normal; color: var(--muted); }
 .hbar-track { height: 12px; border-radius: 4px; background: var(--inset); overflow: hidden; } .hbar-track i { display: block; height: 100%; border-radius: 4px; }
@@ -149,6 +149,7 @@ button.card { text-align: left; width: 100%; }
 .b3 { position: absolute; width: 26px; height: 26px; transform-style: preserve-3d; transform-origin: 13px 13px 0; }
 .b3 i { position: absolute; left: 0; top: 0; display: block; }
 .ax3-x { position: absolute; left: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); font-size: 12px; font-weight: 600; color: var(--sub); text-align: center; }
+.ax3-t { position: absolute; left: 0; text-align: center; font-size: 11px; color: var(--muted); }
 .ax3-y { position: absolute; left: -62px; top: 0; width: 56px; display: grid; font-size: 12px; font-weight: 600; color: var(--sub); text-align: right; align-items: center; }
 .legend3d { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--sub); gap: 10px; }
 .legend3d i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 4px 0 8px; }

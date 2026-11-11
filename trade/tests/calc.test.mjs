@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as C from '../js/calc.js';
-import { createStore, demoState, emptyState, normalize } from '../js/store.js';
+import { createStore, demoState, emptyState, normalize, today } from '../js/store.js';
 import { createSync } from '../js/sync.js';
 import { fetchQuote, refreshQuotes, marketOpen, pricesStale } from '../js/quotes.js';
 
@@ -112,12 +112,12 @@ test('weekday parsing and groupings', () => {
   const c = trade({ id: 'c', setup: '突破', exits: [{ date: '2026-10-01', price: 110, shares: 50 }] });
   const all = [a, b, c];
   near(C.bySetup(all).find((g) => g.key === '突破').total, 0.5);
-  near(C.byWeekday(all)[0].total, 1.5);
-  near(C.byWeekday(all)[3].total, 1);
   assert.equal(C.byMistake(all).length, 1);
   near(C.byMistake(all)[0].total, -0.5);
   near(C.byDate(all).find((g) => g.key === '2026-10-05').total, 1.5);
-  assert.deepEqual(C.setupWeekdayGrid(all, ['突破', '回調']).map((g) => g.row.map((v) => +v.toFixed(2))), [[-0.5, 0, 0, 1, 0], [2, 0, 0, 0, 0]]);
+  a.conf = 1; b.conf = 5; c.conf = 1;
+  const nc = trade({ id: 'd', setup: '突破', conf: null, exits: [{ date: '2026-10-06', price: 120, shares: 50 }] });
+  assert.deepEqual(C.setupConfGrid([...all, nc], ['突破', '回調']).map((g) => g.row.map((v) => +v.toFixed(2))), [[0.5, 0, 0, 0, 0], [0, 0, 0, 0, 2]]);
 });
 
 test('colour scale and R formatting', () => {
@@ -224,4 +224,31 @@ test('prices are stale when missing or older than 10 minutes', () => {
   assert.equal(pricesStale([{ lastPrice: 10, lastPriceAt: now - 60_000 }], now), false);
   assert.equal(pricesStale([{ lastPrice: 10, lastPriceAt: now - 60_000 }, { lastPrice: 10, lastPriceAt: now - 11 * 60_000 }], now), true);
   assert.equal(pricesStale([], now), false);
+});
+
+test('net open risk adds locked profit and remaining risk', () => {
+  const s = state([trade(), trade({ id: 'b', stop: 110 })]);
+  near(C.openRiskTotal(s), 0.5);
+  near(C.heatR(s), 0.5);
+});
+
+test('stats start date: filled with today for old records, kept when set, empty for demo', () => {
+  assert.equal(normalize({ trades: [], settings: {} }).settings.statsFrom, today());
+  assert.equal(normalize({ trades: [], settings: { statsFrom: '2026-01-02' } }).settings.statsFrom, '2026-01-02');
+  assert.equal(normalize(demoState()).settings.statsFrom, '');
+  const storage = memStorage();
+  storage.setItem('tradelog.v1', JSON.stringify({ updatedAt: 42, trades: [], settings: { startCapital: 1 } }));
+  const st = createStore(storage);
+  assert.equal(st.get().updatedAt, 42, 'filling the date must not look like a new edit to sync');
+  assert.equal(JSON.parse(storage.getItem('tradelog.v1')).settings.statsFrom, today());
+});
+
+test('period start: Monday of this week, first of month, first of year', () => {
+  const wed = new Date(2026, 10, 11); // Wed 11 Nov 2026
+  assert.equal(C.periodStart('week', wed), '2026-11-09');
+  assert.equal(C.periodStart('month', wed), '2026-11-01');
+  assert.equal(C.periodStart('year', wed), '2026-01-01');
+  assert.equal(C.periodStart('week', new Date(2026, 10, 15)), '2026-11-09'); // Sunday belongs to the week that started Monday
+  assert.equal(C.periodStart('week', new Date(2026, 10, 16)), '2026-11-16');
+  assert.equal(C.periodStart('week', new Date(2026, 0, 2)), '2025-12-29'); // week crossing the year
 });

@@ -58,6 +58,12 @@ export function heatR(state) {
   return openTrades(state).reduce((s, t) => s + Math.max(0, -openRiskR(t, rU)), 0);
 }
 
+// Net R across open positions if every stop is hit now: losses at risk minus profit already locked.
+export function openRiskTotal(state) {
+  const rU = rUnit(state);
+  return openTrades(state).reduce((s, t) => s + openRiskR(t, rU), 0);
+}
+
 // Cash not tied up in open long positions.
 export function cash(state) {
   const used = openTrades(state).reduce((s, t) => s + (t.side === 'short' ? 0 : t.entry * openShares(t)), 0);
@@ -138,6 +144,15 @@ export function stats(trades) {
   };
 }
 
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// First day (YYYY-MM-DD, local time) of the current week (Monday), month or year.
+export function periodStart(kind, now = new Date()) {
+  if (kind === 'year') return ymd(new Date(now.getFullYear(), 0, 1));
+  if (kind === 'month') return ymd(new Date(now.getFullYear(), now.getMonth(), 1));
+  return ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)));
+}
+
 // Monday = 0 ... Sunday = 6, parsed as a local date so the weekday never shifts with timezone.
 export function weekday(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -161,23 +176,14 @@ export const bySetup = (trades) => groupTotals(trades, (t) => [t.setup || '未�
 export const byMistake = (trades) => groupTotals(trades, (t) => t.mistakes || []);
 export const byDate = (trades) => groupTotals(trades, (t) => [closeDate(t)]);
 
-export function byWeekday(trades) {
-  const out = [0, 1, 2, 3, 4].map((d) => ({ key: d, total: 0, count: 0 }));
-  for (const t of trades) {
-    const d = weekday(closeDate(t));
-    if (d < 5) { out[d].total += tradeR(t); out[d].count += 1; }
-  }
-  return out;
-}
-
-// Setup x weekday totals for the 3D chart.
-export function setupWeekdayGrid(trades, setups) {
+// Setup x confidence (1-5) totals for the 3D chart. Trades without a confidence score are left out.
+export function setupConfGrid(trades, setups) {
   return setups.map((s) => {
     const row = [0, 0, 0, 0, 0];
     for (const t of trades) {
       if ((t.setup || '未分類') !== s) continue;
-      const d = weekday(closeDate(t));
-      if (d < 5) row[d] += tradeR(t);
+      const c = Number(t.conf);
+      if (c >= 1 && c <= 5) row[c - 1] += tradeR(t);
     }
     return { setup: s, row };
   });
