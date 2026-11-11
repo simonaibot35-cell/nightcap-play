@@ -41,7 +41,10 @@ export function dashboard(state, ui) {
   const from = state.settings.statsFrom || '';
   const since = C.stats(closed.filter((t) => C.closeDate(t) >= from));
   const netRisk = C.openRiskTotal(state);
-  const all = C.stats(closed);
+  const CURVE = { week: ['週', '本週'], month: ['月', '本月'], year: ['年', '今年'] };
+  const cr = CURVE[ui.curveRange] ? ui.curveRange : 'month';
+  const curveFrom = C.periodStart(cr);
+  const curve = C.stats(closed.filter((t) => C.closeDate(t) >= curveFrom));
   const open = C.openTrades(state);
   const live = !!state.settings.finnhubKey;
 
@@ -65,8 +68,12 @@ export function dashboard(state, ui) {
     <span class="hint span2 tiles-note">Open risk = 全部持倉而家打中止蝕會賺蝕幾多 R · 勝率同期望${from ? `由 ${from} 開始計` : '計晒全部交易'}（${since.n} 單）</span>
 
     <section class="card a-rise span2" style="animation-delay:160ms">
-      <div class="row between base"><b class="h3">資金曲線（累積 R）</b><span class="hint">${all.n} 單 · 最高 ${C.fmtR(all.peak, 1)}</span></div>
-      ${G.equityCurve(all.cum)}
+      <div class="row between mid-align">
+        <div class="stack"><b class="h3">資金曲線（累積 R）</b><span class="hint">只計已平倉 · ${curve.n} 單 · 總 <b style="color:${C.rColor(curve.total).fg}">${C.fmtR(curve.total, 1)}</b></span></div>
+        <div class="row gap6">${Object.entries(CURVE).map(([k, [l]]) => chip(l, cr === k, `data-act="curve" data-v="${k}" aria-label="${CURVE[k][1]}"`, ' sm')).join('')}</div>
+      </div>
+      ${G.equityCurve(curve.cum, { empty: `${CURVE[cr][1]}未有平倉嘅交易。` })}
+      ${curve.n ? `<div class="row between hint"><span>${curveFrom}</span><span>${today()}</span></div>` : ''}
     </section>
 
     <div class="row between base span2 section-head">

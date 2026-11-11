@@ -15,8 +15,8 @@ function curveGeometry(vals, W, H) {
   return { line, area: `${line} L${last[0].toFixed(1)} ${H} L10 ${H} Z`, zeroY: yOf(0).toFixed(1), last };
 }
 
-export function equityCurve(cum, { height = 130, color = 'var(--blue)', label = '累積 R 資金曲線' } = {}) {
-  if (cum.length < 2) return emptyChart('平倉咗第一單之後，呢度就會有資金曲線。');
+export function equityCurve(cum, { height = 130, color = 'var(--blue)', label = '累積 R 資金曲線', empty = '平倉咗第一單之後，呢度就會有資金曲線。' } = {}) {
+  if (cum.length < 2) return emptyChart(empty);
   const W = 324, g = curveGeometry(cum, W, height);
   return `<svg class="chart" viewBox="0 0 ${W} ${height}" role="img" aria-label="${esc(label)}">
     <line x1="0" y1="${g.zeroY}" x2="${W}" y2="${g.zeroY}" stroke="var(--line-strong)" stroke-dasharray="3 4"/>

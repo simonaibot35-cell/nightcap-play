@@ -242,3 +242,13 @@ test('stats start date: filled with today for old records, kept when set, empty 
   assert.equal(st.get().updatedAt, 42, 'filling the date must not look like a new edit to sync');
   assert.equal(JSON.parse(storage.getItem('tradelog.v1')).settings.statsFrom, today());
 });
+
+test('period start: Monday of this week, first of month, first of year', () => {
+  const wed = new Date(2026, 10, 11); // Wed 11 Nov 2026
+  assert.equal(C.periodStart('week', wed), '2026-11-09');
+  assert.equal(C.periodStart('month', wed), '2026-11-01');
+  assert.equal(C.periodStart('year', wed), '2026-01-01');
+  assert.equal(C.periodStart('week', new Date(2026, 10, 15)), '2026-11-09'); // Sunday belongs to the week that started Monday
+  assert.equal(C.periodStart('week', new Date(2026, 10, 16)), '2026-11-16');
+  assert.equal(C.periodStart('week', new Date(2026, 0, 2)), '2025-12-29'); // week crossing the year
+});

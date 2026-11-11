@@ -144,6 +144,15 @@ export function stats(trades) {
   };
 }
 
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// First day (YYYY-MM-DD, local time) of the current week (Monday), month or year.
+export function periodStart(kind, now = new Date()) {
+  if (kind === 'year') return ymd(new Date(now.getFullYear(), 0, 1));
+  if (kind === 'month') return ymd(new Date(now.getFullYear(), now.getMonth(), 1));
+  return ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)));
+}
+
 // Monday = 0 ... Sunday = 6, parsed as a local date so the weekday never shifts with timezone.
 export function weekday(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);

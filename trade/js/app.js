@@ -221,6 +221,7 @@ const actions = {
   'save-trade': saveTrade,
 
   range(el) { ui.range = el.dataset.v; render(); },
+  curve(el) { ui.curveRange = el.dataset.v; render(); },
   cal(el) {
     const d = new Date(Number(el.dataset.y), Number(el.dataset.m) + Number(el.dataset.v), 1);
     ui.cal = { y: d.getFullYear(), m: d.getMonth() };
