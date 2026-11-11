@@ -94,7 +94,7 @@ function positionCard(t, rU, money, i) {
   return `<button type="button" class="card pos a-rise" style="animation-delay:${240 + i * 70}ms" data-act="open-trade" data-id="${esc(t.id)}">
     <div class="row between">
       <div class="stack">
-        <div class="row gap8 mid-align"><b class="sym">${esc(t.sym)}</b><span class="tag">${esc(t.setup || '')}</span>${t.side === 'short' ? '<span class="tag red">做淡</span>' : ''}</div>
+        <div class="row gap8 mid-align"><span class="num-badge" aria-label="第 ${i + 1} 隻">${i + 1}</span><b class="sym">${esc(t.sym)}</b><span class="tag">${esc(t.setup || '')}</span>${t.side === 'short' ? '<span class="tag red">做淡</span>' : ''}</div>
         <span class="hint">${C.openShares(t)} 股 · 入 ${price(t.entry)} · 止蝕 ${price(t.stop)}</span>
       </div>
       <div class="stack right">
@@ -102,10 +102,6 @@ function positionCard(t, rU, money, i) {
         <span class="hint" style="color:${pnl != null ? fc.fg : 'var(--muted)'}">${pnl != null ? money(pnl, true) : '未有價錢'}</span>
       </div>
     </div>
-    ${t.reason || (t.checks || []).length ? `<div class="reason">
-      <div class="row wrap gap6">${(t.checks || []).map((c) => `<span class="pill">${esc(c)}</span>`).join('')}<span class="pill grey">信心 ${t.conf || '—'}/5</span></div>
-      ${t.reason ? `<p>${esc(t.reason)}</p>` : ''}
-    </div>` : ''}
     <div class="two">
       <div class="badge" style="background:${rc.bg}"><span>Open risk（止蝕位）</span><b style="color:${rc.fg}">${C.fmtR(risk)}</b></div>
       <div class="badge" style="background:${fl != null ? fc.bg : 'var(--inset)'}"><span>浮動 R（現價）</span><b style="color:${fl != null ? fc.fg : 'var(--muted)'}">${fl != null ? C.fmtR(fl) : '—'}</b></div>
