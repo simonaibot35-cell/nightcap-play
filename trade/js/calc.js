@@ -43,6 +43,26 @@ export function floatR(t, rU) {
   return ((t.lastPrice - t.entry) * dir(t) * openShares(t)) / rU;
 }
 
+// R at risk with the original stop (negative = loss if hit), on the open shares.
+export function initRiskR(t, rU) {
+  if (!(rU > 0)) return 0;
+  return ((t.initStop - t.entry) * dir(t) * openShares(t)) / rU;
+}
+
+// Current stop measured against the original risk: -1 = stop unchanged, 0 = breakeven, +2 = locked twice the original risk.
+// Null when the original stop was at or beyond the entry (no original risk to compare with).
+export function stopRatio(t) {
+  const init = (t.entry - t.initStop) * dir(t);
+  if (!(init > 0)) return null;
+  return ((t.stop - t.entry) * dir(t)) / init;
+}
+
+// Price move since entry in %, positive when the position is winning (shorts included).
+export function pricePct(t) {
+  if (t.lastPrice == null || !(t.entry > 0)) return null;
+  return ((t.lastPrice - t.entry) / t.entry) * dir(t) * 100;
+}
+
 export function floatPnl(t) {
   if (t.lastPrice == null) return null;
   return (t.lastPrice - t.entry) * dir(t) * openShares(t);

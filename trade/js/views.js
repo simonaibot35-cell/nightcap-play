@@ -96,8 +96,12 @@ function onboarding() {
 }
 
 function positionCard(t, rU, money, i) {
-  const risk = C.openRiskR(t, rU), fl = C.floatR(t, rU), pnl = C.floatPnl(t);
-  const rc = C.rColor(risk), fc = C.rColor(fl || 0);
+  const init = C.initRiskR(t, rU), risk = C.openRiskR(t, rU), fl = C.floatR(t, rU), pnl = C.floatPnl(t);
+  const ratio = C.stopRatio(t), pct = C.pricePct(t);
+  const ic = C.rColor(init), rc = C.rColor(risk), fc = C.rColor(fl || 0), qc = C.rColor(ratio || 0);
+  const sign = (v) => (v > 0.005 ? '+' : v < -0.005 ? '−' : '');
+  const ratioText = ratio == null ? '—' : `1 : ${sign(ratio)}${Math.abs(ratio).toFixed(1)}`;
+  const pctText = pct == null ? '' : ` · ${sign(pct)}${Math.abs(pct).toFixed(1)}%`;
   return `<button type="button" class="card pos a-rise" style="animation-delay:${240 + i * 70}ms" data-act="open-trade" data-id="${esc(t.id)}">
     <div class="row between">
       <div class="stack">
@@ -106,12 +110,13 @@ function positionCard(t, rU, money, i) {
       </div>
       <div class="stack right">
         <b class="sym">${t.lastPrice != null ? price(t.lastPrice) : '—'}</b>
-        <span class="hint" style="color:${pnl != null ? fc.fg : 'var(--muted)'}">${pnl != null ? money(pnl, true) : '未有價錢'}</span>
+        <span class="hint" style="color:${pnl != null ? fc.fg : 'var(--muted)'}">${pnl != null ? `${money(pnl, true)}${pctText}` : '未有價錢'}</span>
       </div>
     </div>
-    <div class="two">
-      <div class="badge" style="background:${rc.bg}"><span>Open risk（止蝕位）</span><b style="color:${rc.fg}">${C.fmtR(risk)}</b></div>
-      <div class="badge" style="background:${fl != null ? fc.bg : 'var(--inset)'}"><span>浮動 R（現價）</span><b style="color:${fl != null ? fc.fg : 'var(--muted)'}">${fl != null ? C.fmtR(fl) : '—'}</b></div>
+    <div class="three">
+      <div class="badge" style="background:${ic.bg}"><span>原始止蝕</span><b style="color:${ic.fg}">${C.fmtR(init)}</b></div>
+      <div class="badge" style="background:${rc.bg}"><span>而家止蝕</span><b style="color:${rc.fg}">${C.fmtR(risk)}</b></div>
+      <div class="badge" style="background:${ratio != null ? qc.bg : 'var(--inset)'}"><span>比例</span><b style="color:${ratio != null ? qc.fg : 'var(--muted)'}">${ratioText}</b></div>
     </div>
   </button>`;
 }

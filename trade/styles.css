@@ -84,6 +84,7 @@ button.card { text-align: left; width: 100%; }
 .reason { display: flex; flex-direction: column; gap: 6px; background: var(--inset); border-radius: 10px; padding: 10px 12px; }
 .reason p { font-size: 13px; color: var(--sub); line-height: 1.45; overflow-wrap: anywhere; }
 .badge, .cell { border-radius: 10px; padding: 9px 10px; display: flex; flex-direction: column; gap: 2px; }
+.three .badge b { font-size: 16px; }
 .badge span, .cell span { font-size: 11px; color: var(--sub); } .badge b { font-size: 18px; font-weight: 700; }
 .cell { background: var(--inset); } .cell span { color: var(--muted); } .cell b { font-size: 15px; font-weight: 600; }
 .logrow { flex-direction: row; justify-content: space-between; align-items: center; border-radius: 14px; padding: 12px 14px; }
