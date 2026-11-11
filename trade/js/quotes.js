@@ -42,3 +42,9 @@ export function marketOpen(now = new Date()) {
   const mins = ny.getHours() * 60 + ny.getMinutes();
   return day >= 1 && day <= 5 && mins >= 570 && mins < 960;
 }
+
+// True when any open position has no price yet, or its price is older than maxAgeMs.
+// Used to fetch once when the app is opened outside market hours.
+export function pricesStale(openTrades, now = Date.now(), maxAgeMs = 10 * 60 * 1000) {
+  return openTrades.some((t) => t.lastPrice == null || !(t.lastPriceAt > 0) || now - t.lastPriceAt > maxAgeMs);
+}

@@ -2,6 +2,7 @@
 import * as C from './calc.js';
 import * as G from './charts.js';
 import { today } from './store.js';
+import { marketOpen } from './quotes.js';
 
 const { esc } = G;
 const price = (n) => `$${Number(n).toFixed(2)}`;
@@ -67,7 +68,7 @@ export function dashboard(state, ui) {
 
     <div class="row between base span2 section-head">
       <h2>未平倉（${open.length}）</h2>
-      <button type="button" class="link" data-act="refresh-quotes"><i class="dot${live ? ' live' : ''}"></i>${live ? esc(ui.quoteNote || '即時 · 每 30 秒') : '未設定即時報價'}</button>
+      <button type="button" class="link" data-act="refresh-quotes"><i class="dot${live ? ' live' : ''}"></i>${live ? esc(ui.quoteNote || (marketOpen() ? '即時 · 每 30 秒' : '已收市 · 打開時更新')) : '未設定即時報價'}</button>
     </div>
     <div class="scale span2"><i></i><div><span>−1R 會蝕</span><span>0R 打和</span><span>+1R 鎖利</span></div></div>
     ${open.length ? open.map((t, i) => positionCard(t, rU, money, i)).join('') : `<div class="empty span2">未有持倉。去「新交易」計好倉位再記錄。</div>`}

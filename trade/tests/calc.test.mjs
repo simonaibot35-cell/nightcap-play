@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as C from '../js/calc.js';
 import { createStore, demoState, emptyState, normalize } from '../js/store.js';
 import { createSync } from '../js/sync.js';
-import { fetchQuote, refreshQuotes, marketOpen } from '../js/quotes.js';
+import { fetchQuote, refreshQuotes, marketOpen, pricesStale } from '../js/quotes.js';
 
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
 const trade = (o = {}) => ({ id: 't', sym: 'X', side: 'long', setup: '突破', entry: 100, shares: 50, initStop: 95, stop: 95, rValue: 500, exits: [], fees: 0, mistakes: [], lastPrice: null, ...o });
@@ -216,4 +216,12 @@ test('market hours use New York time', () => {
   assert.equal(marketOpen(new Date('2026-11-11T15:00:00Z')), true);  // Wed 10:00 ET
   assert.equal(marketOpen(new Date('2026-11-11T13:00:00Z')), false); // Wed 08:00 ET
   assert.equal(marketOpen(new Date('2026-11-14T16:00:00Z')), false); // Saturday
+});
+
+test('prices are stale when missing or older than 10 minutes', () => {
+  const now = 1_000_000_000;
+  assert.equal(pricesStale([{ lastPrice: null, lastPriceAt: 0 }], now), true);
+  assert.equal(pricesStale([{ lastPrice: 10, lastPriceAt: now - 60_000 }], now), false);
+  assert.equal(pricesStale([{ lastPrice: 10, lastPriceAt: now - 60_000 }, { lastPrice: 10, lastPriceAt: now - 11 * 60_000 }], now), true);
+  assert.equal(pricesStale([], now), false);
 });
