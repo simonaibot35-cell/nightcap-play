@@ -265,3 +265,19 @@ test('original stop R, current stop R, stop ratio and price %', () => {
   near(C.pricePct(trade({ lastPrice: 103.5 })), 3.5);
   near(C.pricePct(trade({ side: 'short', lastPrice: 103.5 })), -3.5);
 });
+
+test('breakeven trades are neither wins nor losses', () => {
+  const mk = (px, i, fees = 0) => trade({ id: String(i), fees, exits: [{ date: `2026-10-0${i + 1}`, price: px, shares: 50 }] });
+  const st = C.stats([mk(95, 0), mk(100, 1), mk(100, 2, 1), mk(110, 3)]); // -0.5R, 0R, -0.002R (fees), +1R
+  assert.equal(st.wins, 1);
+  assert.equal(st.losses, 1);
+  assert.equal(st.breakeven, 2);
+  near(st.avgLoss, -0.5);
+  near(st.winRate, 0.25);
+});
+
+test('typed share count is checked on its own', () => {
+  assert.deepEqual(C.checkShares({ shares: 50, entry: 100, per: 5, rU: 500, heatLeftR: 5, cashAvail: 50000, cap: 50000 }), []);
+  assert.deepEqual(C.checkShares({ shares: 600, entry: 100, per: 5, rU: 500, heatLeftR: 5, cashAvail: 50000, cap: 50000 }), ['heatOver', 'cash', 'concentration']);
+  assert.deepEqual(C.checkShares({ shares: 600, entry: 100, per: 5, side: 'short', rU: 500, heatLeftR: 10, cashAvail: 0, cap: 50000 }), ['concentration']);
+});

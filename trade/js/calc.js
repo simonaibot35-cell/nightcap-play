@@ -16,7 +16,8 @@ export function realizedPnl(t) {
   return gross - (t.fees || 0);
 }
 
-export const closeDate = (t) => (t.exits && t.exits.length ? t.exits[t.exits.length - 1].date : null);
+// The latest exit date, whatever order partial exits were entered in.
+export const closeDate = (t) => ((t.exits || []).reduce((d, e) => (d == null || e.date > d ? e.date : d), null));
 
 // Result of a fully closed trade in R.
 export const tradeR = (t) => (t.rValue > 0 ? realizedPnl(t) / t.rValue : 0);
@@ -70,7 +71,10 @@ export function floatPnl(t) {
 
 export const openTrades = (state) => state.trades.filter((t) => !isClosed(t));
 export const closedTrades = (state) =>
-  state.trades.filter(isClosed).sort((a, b) => (closeDate(a) < closeDate(b) ? -1 : closeDate(a) > closeDate(b) ? 1 : 0));
+  state.trades.filter(isClosed)
+    .map((t, i) => ({ t, d: closeDate(t), i }))
+    .sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : a.i - b.i))
+    .map((x) => x.t);
 
 // Open heat = total R still at risk across open positions (locked profits do not offset it).
 export function heatR(state) {
@@ -123,8 +127,7 @@ export function sizePosition({ entry, stop, target, side = 'long', riskMult, rU,
   }
   if (wantRisk > maxByHeat + 1e-9) warnings.push('heat');
   if (shares === 0) warnings.push('zero');
-  if (side !== 'short' && cost > cashAvail + 1e-9) warnings.push('cash');
-  if (cap > 0 && cost / cap > 0.25) warnings.push('concentration');
+  warnings.push(...checkShares({ shares, entry, per, side, rU, heatLeftR: Infinity, cashAvail, cap }));
 
   return {
     ok: true, shares, per, cost, rr, rewardPer, warnings,
@@ -134,13 +137,29 @@ export function sizePosition({ entry, stop, target, side = 'long', riskMult, rU,
   };
 }
 
+/**
+ * Checks for a given share count (used when the user types their own share count instead of the suggestion).
+ * Returns warning codes: 'heatOver' | 'cash' | 'concentration'.
+ */
+export function checkShares({ shares, entry, per, side = 'long', rU, heatLeftR, cashAvail, cap }) {
+  const out = [];
+  const cost = shares * entry;
+  if (rU > 0 && (shares * per) / rU > heatLeftR + 1e-9) out.push('heatOver');
+  if (side !== 'short' && cost > cashAvail + 1e-9) out.push('cash');
+  if (cap > 0 && cost / cap > 0.25) out.push('concentration');
+  return out;
+}
+
 const sum = (a) => a.reduce((x, y) => x + y, 0);
+export const BE = 0.005; // |R| below this shows as 0.00R and counts as breakeven
 
 // Summary statistics for a list of closed trades (already in chronological order).
 export function stats(trades) {
   const rs = trades.map(tradeR);
-  const wins = rs.filter((r) => r > 0);
-  const losses = rs.filter((r) => r <= 0);
+  // A trade that rounds to 0.00R is breakeven: it counts towards the trade count but is neither a win nor a loss,
+  // so it cannot drag the average loss towards zero. The cut-off matches what fmtR displays as 0.00R.
+  const wins = rs.filter((r) => r >= BE);
+  const losses = rs.filter((r) => r <= -BE);
   const cum = [0];
   const dd = [0];
   let acc = 0, peak = 0, maxDd = 0;
@@ -156,7 +175,7 @@ export function stats(trades) {
   return {
     n: rs.length, rs, cum, dd, peak, maxDd,
     total: acc,
-    wins: wins.length, losses: losses.length,
+    wins: wins.length, losses: losses.length, breakeven: rs.length - wins.length - losses.length,
     winRate: rs.length ? wins.length / rs.length : 0,
     expectancy: rs.length ? acc / rs.length : 0,
     avgWin, avgLoss,
