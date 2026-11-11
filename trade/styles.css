@@ -6,7 +6,8 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+/* The page itself never scrolls: only <main> does. This stops iOS from dragging the tab bar with a bounce. */
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
   font-family: Inter, 'Noto Sans HK', system-ui, sans-serif; font-variant-numeric: tabular-nums;
@@ -23,12 +24,12 @@ input[type=number] { -moz-appearance: textfield; }
 hr { border: 0; height: 1px; background: var(--line); margin: 0; width: 100%; }
 
 /* ---------- Shell ---------- */
-.app { height: 100dvh; display: flex; flex-direction: column; max-width: 1180px; margin: 0 auto; }
+.app { position: fixed; inset: 0; display: flex; flex-direction: column; max-width: 1180px; margin: 0 auto; }
 header { display: flex; align-items: center; justify-content: space-between; padding: calc(16px + env(safe-area-inset-top)) 20px 12px; }
 .eyebrow { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
-main { flex: 1; overflow-y: auto; padding: 4px 16px 24px; scrollbar-width: none; }
+main { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 4px 16px 24px; scrollbar-width: none; }
 main::-webkit-scrollbar { display: none; }
-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); background: #10141A; border-top: 1px solid #1F2630; }
+nav { flex: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); background: #10141A; border-top: 1px solid #1F2630; }
 nav button { height: 56px; border: 0; background: transparent; font-size: 11px; font-weight: 600; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 12px; }
 nav button[aria-current=page] { color: var(--blue-fg); }
 

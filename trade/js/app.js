@@ -372,6 +372,16 @@ const endDrag = () => { drag = null; };
 main.addEventListener('pointerup', endDrag);
 main.addEventListener('pointercancel', endDrag);
 
+/* ---------- iOS keyboard ---------- */
+
+// When the iOS keyboard closes it can leave the page scrolled, which pushes the tab bar out of place.
+// The page itself is never meant to scroll, so snap it back.
+function resetPageScroll() {
+  if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+}
+document.addEventListener('focusout', () => setTimeout(resetPageScroll, 60));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', () => setTimeout(resetPageScroll, 60));
+
 /* ---------- Boot ---------- */
 
 window.addEventListener('hashchange', () => {
