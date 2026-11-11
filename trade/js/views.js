@@ -243,10 +243,10 @@ export function analysis(state, ui) {
   return `<div class="cards">${head}
     <section class="card a-rise span2">
       <div class="row between mid-align">
-        <div class="stack"><h2>策略 × 星期幾</h2><span class="hint">柱越高，嗰個組合賺蝕越多 R · 左右掃可以轉</span></div>
+        <div class="stack"><h2>策略 × 信心</h2><span class="hint">信心 1 至 5 分 · 柱越高，嗰個組合賺蝕越多 R · 左右掃可以轉</span></div>
         <div class="row gap6"><button type="button" class="round" data-act="rot" data-v="30" aria-label="向左轉">‹</button><button type="button" class="round" data-act="rot" data-v="-30" aria-label="向右轉">›</button></div>
       </div>
-      ${G.chart3d(C.setupWeekdayGrid(closed, setups), ui.rot)}
+      ${G.chart3d(C.setupConfGrid(closed, setups), ui.rot)}
     </section>
 
     <section class="card a-rise" style="animation-delay:80ms">
@@ -280,7 +280,6 @@ export function analysis(state, ui) {
     </section>
 
     <section class="card a-rise" style="animation-delay:320ms"><h2>按策略分</h2>${G.hBars(C.bySetup(closed).sort((a, b) => b.total - a.total))}</section>
-    <section class="card a-rise" style="animation-delay:380ms"><h2>按星期幾分</h2>${G.weekdayBars(C.byWeekday(closed))}</section>
     <section class="card a-rise" style="animation-delay:440ms">
       <div class="row between base"><h2>犯錯成本</h2><span class="hint">每個壞習慣令你蝕幾多</span></div>
       ${mistakes.length ? G.hBars(mistakes, { color: 'var(--amber)' }) : G.emptyChart('呢段時間冇標記犯錯，好嘢。')}

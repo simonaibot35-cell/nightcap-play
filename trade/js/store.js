@@ -102,6 +102,7 @@ export function demoState() {
   state.settings.startCapital = 50000;
   state.settings.statsFrom = '';
   let cap = 50000;
+  const confs = [4, 2, 3, 3, 1, 5, 2, 5, 3, 4, 2, 5, 4, 1, 3, 2, 4, 2, 5, 3, 4, 2, 1, 3];
   rows.forEach(([sym, setup, r, mistakes], i) => {
     const date = weekdays[i];
     const rValue = cap * 0.01;
@@ -111,7 +112,7 @@ export function demoState() {
     const exit = entry + pnl / shares;
     cap += pnl;
     state.trades.push({
-      id: `demo${i}`, sym, side: 'long', setup, checks: ['趨勢向上'], reason: '示範交易', conf: 3,
+      id: `demo${i}`, sym, side: 'long', setup, checks: ['趨勢向上'], reason: '示範交易', conf: confs[i],
       entryDate: date, entry, shares, initStop: stop, stop, target: 115, riskMult: 0.5, rValue,
       exits: [{ date, price: exit, shares }], fees: 0, mistakes, notes: '', lastPrice: null, lastPriceAt: 0,
     });

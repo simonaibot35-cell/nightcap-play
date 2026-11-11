@@ -112,12 +112,12 @@ test('weekday parsing and groupings', () => {
   const c = trade({ id: 'c', setup: '突破', exits: [{ date: '2026-10-01', price: 110, shares: 50 }] });
   const all = [a, b, c];
   near(C.bySetup(all).find((g) => g.key === '突破').total, 0.5);
-  near(C.byWeekday(all)[0].total, 1.5);
-  near(C.byWeekday(all)[3].total, 1);
   assert.equal(C.byMistake(all).length, 1);
   near(C.byMistake(all)[0].total, -0.5);
   near(C.byDate(all).find((g) => g.key === '2026-10-05').total, 1.5);
-  assert.deepEqual(C.setupWeekdayGrid(all, ['突破', '回調']).map((g) => g.row.map((v) => +v.toFixed(2))), [[-0.5, 0, 0, 1, 0], [2, 0, 0, 0, 0]]);
+  a.conf = 1; b.conf = 5; c.conf = 1;
+  const nc = trade({ id: 'd', setup: '突破', conf: null, exits: [{ date: '2026-10-06', price: 120, shares: 50 }] });
+  assert.deepEqual(C.setupConfGrid([...all, nc], ['突破', '回調']).map((g) => g.row.map((v) => +v.toFixed(2))), [[0.5, 0, 0, 0, 0], [0, 0, 0, 0, 2]]);
 });
 
 test('colour scale and R formatting', () => {

@@ -176,23 +176,14 @@ export const bySetup = (trades) => groupTotals(trades, (t) => [t.setup || '未�
 export const byMistake = (trades) => groupTotals(trades, (t) => t.mistakes || []);
 export const byDate = (trades) => groupTotals(trades, (t) => [closeDate(t)]);
 
-export function byWeekday(trades) {
-  const out = [0, 1, 2, 3, 4].map((d) => ({ key: d, total: 0, count: 0 }));
-  for (const t of trades) {
-    const d = weekday(closeDate(t));
-    if (d < 5) { out[d].total += tradeR(t); out[d].count += 1; }
-  }
-  return out;
-}
-
-// Setup x weekday totals for the 3D chart.
-export function setupWeekdayGrid(trades, setups) {
+// Setup x confidence (1-5) totals for the 3D chart. Trades without a confidence score are left out.
+export function setupConfGrid(trades, setups) {
   return setups.map((s) => {
     const row = [0, 0, 0, 0, 0];
     for (const t of trades) {
       if ((t.setup || '未分類') !== s) continue;
-      const d = weekday(closeDate(t));
-      if (d < 5) row[d] += tradeR(t);
+      const c = Number(t.conf);
+      if (c >= 1 && c <= 5) row[c - 1] += tradeR(t);
     }
     return { setup: s, row };
   });
