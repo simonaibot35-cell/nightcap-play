@@ -2,7 +2,7 @@
 import * as C from './calc.js';
 import * as V from './views.js';
 import { createStore, demoState, emptyState, uid, today } from './store.js';
-import { fetchQuote, refreshQuotes, marketOpen } from './quotes.js';
+import { fetchQuote, refreshQuotes, marketOpen, pricesStale } from './quotes.js';
 import { createSync, loadSyncConfig, saveSyncConfig, makeClient } from './sync.js';
 
 const TABS = { dash: '總覽', new: '倉位計算機', log: '交易紀錄', stats: '分析', settings: '設定' };
@@ -95,13 +95,26 @@ store.subscribe(() => {
 
 /* ---------- Live quotes ---------- */
 
-async function pollQuotes(manual = false) {
+// mode: 'manual' (button), 'tick' (every 30s while the market is open),
+// 'open' (app opened or brought back to the screen: also fetches after hours if prices are stale).
+let polling = false;
+async function pollQuotes(mode = 'tick') {
+  const manual = mode === 'manual';
   const state = store.get(), open = C.openTrades(state);
   if (!state.settings.finnhubKey) { if (manual) toast('未設定 Finnhub API key，去「設定」加入。'); return; }
   if (!open.length) { if (manual) toast('未有持倉要更新。'); return; }
-  if (!manual && (document.visibilityState !== 'visible' || !marketOpen())) return;
+  if (!manual) {
+    if (document.visibilityState !== 'visible' || polling) return;
+    if (!marketOpen() && !(mode === 'open' && pricesStale(open))) return;
+  }
+  polling = true;
+  try { await doPoll(manual); } finally { polling = false; }
+}
+
+async function doPoll(manual) {
+  const open = C.openTrades(store.get());
   const res = await refreshQuotes(store, open);
-  const time = new Date().toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' });
+  const time = new Date().toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   ui.quoteNote = res.updated ? `已更新 ${time}${res.failed ? `（${res.failed} 隻失敗）` : ''}`
     : { key: 'API key 唔啱', limit: '請求太密，遲啲再試', symbol: '搵唔到代號' }[res.error] || '更新失敗，檢查網絡';
   if (ui.tab === 'dash' || ui.tab === 'settings') render();
@@ -162,7 +175,7 @@ function saveTrade() {
   ui.form = blankForm();
   toast(`已記錄 ${sym} ${shares} 股`);
   go('dash');
-  pollQuotes(false);
+  pollQuotes('open');
 }
 
 function sheetTrade(s) { return s.trades.find((x) => x.id === ui.sheetId); }
@@ -194,7 +207,7 @@ const actions = {
   },
   'open-trade'(el) { openSheet(el.dataset.id); },
   'close-sheet'() { closeSheet(); },
-  'refresh-quotes'() { pollQuotes(true); },
+  'refresh-quotes'() { pollQuotes('manual'); },
 
   side(el) { ui.form.side = el.dataset.v; render(); },
   risk(el) { ui.form.riskMult = Number(el.dataset.v); render(); },
@@ -365,6 +378,7 @@ window.addEventListener('hashchange', () => {
 });
 go(location.hash.replace('#/', '') || 'dash');
 if (ui.tab === 'dash') countUp();
-setInterval(() => pollQuotes(false), 30000);
-pollQuotes(false);
+setInterval(() => pollQuotes('tick'), 30000);
+pollQuotes('open');
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pollQuotes('open'); });
 startSync();
