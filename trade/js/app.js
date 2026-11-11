@@ -222,6 +222,7 @@ const actions = {
 
   range(el) { ui.range = el.dataset.v; render(); },
   curve(el) { ui.curveRange = el.dataset.v; render(); },
+  'log-more'() { ui.logLimit = (ui.logLimit || V.LOG_PAGE) + V.LOG_PAGE; render(); },
   cal(el) {
     const d = new Date(Number(el.dataset.y), Number(el.dataset.m) + Number(el.dataset.v), 1);
     ui.cal = { y: d.getFullYear(), m: d.getMonth() };

@@ -63,7 +63,7 @@ const column = (v, sc, delay = 0) => `<div class="tb-up" style="height:${sc.up.t
 export function tradeBars(rs) {
   if (!rs.length) return emptyChart('未有已平倉嘅交易。');
   const shown = rs.slice(-40), sc = barScale(shown);
-  const cols = shown.map((r, i) => `<div class="tb-col">${column(r, sc, i * 20)}</div>`).join('');
+  const cols = shown.map((r, i) => `<div class="tb-col">${column(r, sc, Math.min(i, 20) * 12)}</div>`).join('');
   return `<div class="trade-bars" style="grid-template-columns:repeat(${shown.length},minmax(0,1fr))" role="img" aria-label="每單交易嘅 R 值柱狀圖">${cols}</div>`;
 }
 
@@ -111,7 +111,7 @@ export function chart3d(grid, rot) {
     const a = pos ? '#2FA676' : neg ? '#C24A55' : '#2A323D';
     const b = pos ? '#24825C' : neg ? '#9A3A44' : '#232A34';
     const x = wi * CW + (CW - B) / 2, y = si * CD + (CD - B) / 2;
-    return `<div class="b3 a-rise3d" style="left:${x}px;top:${y}px;animation-delay:${300 + (si * 5 + wi) * 35}ms">
+    return `<div class="b3 a-rise3d" style="left:${x}px;top:${y}px;animation-delay:${150 + Math.min(si * 5 + wi, 24) * 20}ms">
       <i style="width:${B}px;height:${h}px;top:0;transform-origin:top;transform:rotateX(90deg);background:${a}"></i>
       <i style="width:${B}px;height:${h}px;top:${B}px;transform-origin:top;transform:rotateX(90deg);background:${a}"></i>
       <i style="width:${h}px;height:${B}px;left:0;transform-origin:left;transform:rotateY(-90deg);background:${b}"></i>

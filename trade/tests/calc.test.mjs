@@ -252,3 +252,32 @@ test('period start: Monday of this week, first of month, first of year', () => {
   assert.equal(C.periodStart('week', new Date(2026, 10, 16)), '2026-11-16');
   assert.equal(C.periodStart('week', new Date(2026, 0, 2)), '2025-12-29'); // week crossing the year
 });
+
+test('original stop R, current stop R, stop ratio and price %', () => {
+  near(C.initRiskR(trade(), 500), -0.5);
+  near(C.initRiskR(trade({ stop: 110 }), 500), -0.5); // original stop does not move
+  assert.equal(C.stopRatio(trade()), -1);              // stop unchanged
+  assert.equal(C.stopRatio(trade({ stop: 100 })), 0);  // breakeven
+  assert.equal(C.stopRatio(trade({ stop: 110 })), 2);  // locked 2x the original risk
+  assert.equal(C.stopRatio(trade({ side: 'short', entry: 100, initStop: 105, stop: 90 })), 2);
+  assert.equal(C.stopRatio(trade({ initStop: 100 })), null);
+  assert.equal(C.pricePct(trade()), null);
+  near(C.pricePct(trade({ lastPrice: 103.5 })), 3.5);
+  near(C.pricePct(trade({ side: 'short', lastPrice: 103.5 })), -3.5);
+});
+
+test('breakeven trades are neither wins nor losses', () => {
+  const mk = (px, i, fees = 0) => trade({ id: String(i), fees, exits: [{ date: `2026-10-0${i + 1}`, price: px, shares: 50 }] });
+  const st = C.stats([mk(95, 0), mk(100, 1), mk(100, 2, 1), mk(110, 3)]); // -0.5R, 0R, -0.002R (fees), +1R
+  assert.equal(st.wins, 1);
+  assert.equal(st.losses, 1);
+  assert.equal(st.breakeven, 2);
+  near(st.avgLoss, -0.5);
+  near(st.winRate, 0.25);
+});
+
+test('typed share count is checked on its own', () => {
+  assert.deepEqual(C.checkShares({ shares: 50, entry: 100, per: 5, rU: 500, heatLeftR: 5, cashAvail: 50000, cap: 50000 }), []);
+  assert.deepEqual(C.checkShares({ shares: 600, entry: 100, per: 5, rU: 500, heatLeftR: 5, cashAvail: 50000, cap: 50000 }), ['heatOver', 'cash', 'concentration']);
+  assert.deepEqual(C.checkShares({ shares: 600, entry: 100, per: 5, side: 'short', rU: 500, heatLeftR: 10, cashAvail: 0, cap: 50000 }), ['concentration']);
+});

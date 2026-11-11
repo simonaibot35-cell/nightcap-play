@@ -18,6 +18,11 @@ h1 { font-size: 22px; font-weight: 700; }
 h2 { font-size: 15px; font-weight: 700; }
 h3, .h3 { font-size: 13px; font-weight: 600; }
 button { font: inherit; color: inherit; cursor: pointer; }
+/* No double-tap zoom delay on taps, and an immediate pressed state so every tap feels answered. */
+button, input, textarea, label, a { touch-action: manipulation; }
+button { transition: transform .08s ease, background-color .15s ease, border-color .15s ease, color .15s ease; }
+button:active { transform: scale(.97); }
+button.card:active { transform: scale(.99); }
 button:focus-visible, input:focus, textarea:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
 input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
@@ -84,6 +89,7 @@ button.card { text-align: left; width: 100%; }
 .reason { display: flex; flex-direction: column; gap: 6px; background: var(--inset); border-radius: 10px; padding: 10px 12px; }
 .reason p { font-size: 13px; color: var(--sub); line-height: 1.45; overflow-wrap: anywhere; }
 .badge, .cell { border-radius: 10px; padding: 9px 10px; display: flex; flex-direction: column; gap: 2px; }
+.three .badge b { font-size: 16px; }
 .badge span, .cell span { font-size: 11px; color: var(--sub); } .badge b { font-size: 18px; font-weight: 700; }
 .cell { background: var(--inset); } .cell span { color: var(--muted); } .cell b { font-size: 15px; font-weight: 600; }
 .logrow { flex-direction: row; justify-content: space-between; align-items: center; border-radius: 14px; padding: 12px 14px; }
@@ -171,14 +177,14 @@ dialog::backdrop { background: rgba(4, 6, 9, .66); }
 @keyframes rise3d { from { transform: scale3d(1, 1, .001); } }
 @keyframes spin3d { from { transform: rotateZ(-80deg); } to { transform: rotateZ(0); } }
 @media (prefers-reduced-motion: no-preference) {
-  .anim .a-rise { animation: rise .55s cubic-bezier(.2,.7,.2,1) both; }
-  .anim .a-fade { animation: fade .9s ease-out .5s both; }
-  .anim .a-draw { stroke-dasharray: 1; animation: draw 1.8s ease-out both; }
-  .anim .a-grow-x { transform-origin: left; animation: growx .8s cubic-bezier(.2,.7,.2,1) .15s both; }
-  .anim .a-grow-y { transform-origin: bottom; animation: growy .6s cubic-bezier(.2,.7,.2,1) both; }
-  .anim .a-grow-yd { transform-origin: top; animation: growy .6s cubic-bezier(.2,.7,.2,1) both; }
-  .anim .a-rise3d { animation: rise3d .8s cubic-bezier(.2,.7,.2,1) both; }
-  .anim .a-spin3d { animation: spin3d 1.6s cubic-bezier(.2,.7,.2,1) both; }
+  .anim .a-rise { animation: rise .35s cubic-bezier(.2,.7,.2,1) both; }
+  .anim .a-fade { animation: fade .5s ease-out .25s both; }
+  .anim .a-draw { stroke-dasharray: 1; animation: draw 1s ease-out both; }
+  .anim .a-grow-x { transform-origin: left; animation: growx .5s cubic-bezier(.2,.7,.2,1) .1s both; }
+  .anim .a-grow-y { transform-origin: bottom; animation: growy .45s cubic-bezier(.2,.7,.2,1) both; }
+  .anim .a-grow-yd { transform-origin: top; animation: growy .45s cubic-bezier(.2,.7,.2,1) both; }
+  .anim .a-rise3d { animation: rise3d .6s cubic-bezier(.2,.7,.2,1) both; }
+  .anim .a-spin3d { animation: spin3d 1.1s cubic-bezier(.2,.7,.2,1) both; }
 }
 
 /* ---------- Desktop ---------- */
