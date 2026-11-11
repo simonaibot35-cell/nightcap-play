@@ -58,6 +58,12 @@ export function heatR(state) {
   return openTrades(state).reduce((s, t) => s + Math.max(0, -openRiskR(t, rU)), 0);
 }
 
+// Net R across open positions if every stop is hit now: losses at risk minus profit already locked.
+export function openRiskTotal(state) {
+  const rU = rUnit(state);
+  return openTrades(state).reduce((s, t) => s + openRiskR(t, rU), 0);
+}
+
 // Cash not tied up in open long positions.
 export function cash(state) {
   const used = openTrades(state).reduce((s, t) => s + (t.side === 'short' ? 0 : t.entry * openShares(t)), 0);

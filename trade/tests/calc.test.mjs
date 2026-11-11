@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as C from '../js/calc.js';
-import { createStore, demoState, emptyState, normalize } from '../js/store.js';
+import { createStore, demoState, emptyState, normalize, today } from '../js/store.js';
 import { createSync } from '../js/sync.js';
 import { fetchQuote, refreshQuotes, marketOpen, pricesStale } from '../js/quotes.js';
 
@@ -224,4 +224,21 @@ test('prices are stale when missing or older than 10 minutes', () => {
   assert.equal(pricesStale([{ lastPrice: 10, lastPriceAt: now - 60_000 }], now), false);
   assert.equal(pricesStale([{ lastPrice: 10, lastPriceAt: now - 60_000 }, { lastPrice: 10, lastPriceAt: now - 11 * 60_000 }], now), true);
   assert.equal(pricesStale([], now), false);
+});
+
+test('net open risk adds locked profit and remaining risk', () => {
+  const s = state([trade(), trade({ id: 'b', stop: 110 })]);
+  near(C.openRiskTotal(s), 0.5);
+  near(C.heatR(s), 0.5);
+});
+
+test('stats start date: filled with today for old records, kept when set, empty for demo', () => {
+  assert.equal(normalize({ trades: [], settings: {} }).settings.statsFrom, today());
+  assert.equal(normalize({ trades: [], settings: { statsFrom: '2026-01-02' } }).settings.statsFrom, '2026-01-02');
+  assert.equal(normalize(demoState()).settings.statsFrom, '');
+  const storage = memStorage();
+  storage.setItem('tradelog.v1', JSON.stringify({ updatedAt: 42, trades: [], settings: { startCapital: 1 } }));
+  const st = createStore(storage);
+  assert.equal(st.get().updatedAt, 42, 'filling the date must not look like a new edit to sync');
+  assert.equal(JSON.parse(storage.getItem('tradelog.v1')).settings.statsFrom, today());
 });

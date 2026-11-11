@@ -38,7 +38,9 @@ export function dashboard(state, ui) {
   const heatColor = heatPct >= 1 ? 'var(--red)' : heatPct >= 0.8 ? 'var(--amber)' : 'var(--blue)';
   const leftR = Math.max(0, heatCap - heat), mult = state.settings.defaultRiskMult;
   const closed = C.closedTrades(state);
-  const month = C.stats(closed.filter((t) => C.closeDate(t) >= daysAgo(30)));
+  const from = state.settings.statsFrom || '';
+  const since = C.stats(closed.filter((t) => C.closeDate(t) >= from));
+  const netRisk = C.openRiskTotal(state);
   const all = C.stats(closed);
   const open = C.openTrades(state);
   const live = !!state.settings.finnhubKey;
@@ -56,10 +58,11 @@ export function dashboard(state, ui) {
     </section>
 
     <section class="tiles a-rise" style="animation-delay:80ms">
-      ${tile('30 日總 R', C.fmtR(month.total, 1), month.total >= 0 ? 'var(--green)' : 'var(--red)')}
-      ${tile('30 日勝率', month.n ? `${Math.round(month.winRate * 100)}%` : '—')}
-      ${tile('30 日期望', month.n ? C.fmtR(month.expectancy) : '—')}
+      ${tile('Open risk', open.length ? C.fmtR(netRisk) : '—', open.length ? C.rColor(netRisk).fg : '')}
+      ${tile('勝率', since.n ? `${Math.round(since.winRate * 100)}%` : '—')}
+      ${tile('每單期望', since.n ? C.fmtR(since.expectancy) : '—')}
     </section>
+    <span class="hint span2 tiles-note">Open risk = 全部持倉而家打中止蝕會賺蝕幾多 R · 勝率同期望${from ? `由 ${from} 開始計` : '計晒全部交易'}（${since.n} 單）</span>
 
     <section class="card a-rise span2" style="animation-delay:160ms">
       <div class="row between base"><b class="h3">資金曲線（累積 R）</b><span class="hint">${all.n} 單 · 最高 ${C.fmtR(all.peak, 1)}</span></div>
@@ -297,6 +300,8 @@ export function settings(state, ui) {
         <label class="field">Open heat 上限（R）<input data-s="heatCapR" type="number" inputmode="decimal" step="0.5" min="0.5" value="${s.heatCapR}"></label>
       </div>
       <span class="hint">1R = 當前本金嘅 ${s.riskPct}%。本金 = 起始本金 + 入金出金 + 已平倉盈虧。</span>
+      <label class="field">總覽嘅勝率同期望由幾時開始計<input data-s="statsFrom" type="date" value="${esc(s.statsFrom || '')}"></label>
+      <span class="hint">清空日期就計晒全部交易。</span>
     </section>
 
     <section class="card">
