@@ -69,6 +69,14 @@ export function stopRatio(t) {
   return ((t.stop - t.entry) * dir(t)) / init;
 }
 
+// Size of the original position as a % of the capital at the time it was opened.
+// rValue was 1R then, i.e. riskPct % of that capital.
+export function positionPct(t, riskPct = 1) {
+  if (!(t.rValue > 0) || !(riskPct > 0)) return null;
+  const capAtEntry = t.rValue / (riskPct / 100);
+  return ((t.entry * t.shares) / capAtEntry) * 100;
+}
+
 // Price move since entry in %, positive when the position is winning (shorts included).
 export function pricePct(t) {
   if (t.lastPrice == null || !(t.entry > 0)) return null;
