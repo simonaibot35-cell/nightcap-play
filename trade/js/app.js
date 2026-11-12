@@ -246,9 +246,11 @@ const actions = {
     const t0 = sheetTrade(store.get()), open = C.openShares(t0);
     if (!(px > 0)) { toast('入平倉價。'); return; }
     if (!(n > 0) || n > open) { toast(`股數要喺 1 至 ${open} 之間。`); return; }
+    const all = n === open;
+    if (!confirm(`用 $${px.toFixed(2)} 平 ${n} 股 ${t0.sym}？${all ? '\n平晒之後會搬去「交易紀錄」。' : ''}`)) return;
     act((s) => {
       const t = sheetTrade(s); captureNotes(s);
-      t.exits.push({ date, price: px, shares: n });
+      t.exits.push({ date, price: px, shares: n, fees });
       t.fees = (t.fees || 0) + fees;
       t.lastPrice = px; t.lastPriceAt = Date.now();
     });
@@ -265,6 +267,15 @@ const actions = {
     renderSheet(); render();
   },
   'save-notes'() { act((s) => captureNotes(s)); toast('已儲存'); },
+  'undo-exit'() {
+    const t0 = sheetTrade(store.get());
+    const e = t0 && t0.exits[t0.exits.length - 1];
+    if (!e) return;
+    if (!confirm(`撤銷 ${e.date} 用 $${Number(e.price).toFixed(2)} 平 ${e.shares} 股？\n呢 ${e.shares} 股會返去持倉。`)) return;
+    act((s) => { const t = sheetTrade(s); captureNotes(s); C.undoLastExit(t); });
+    toast(`已撤銷，${t0.sym} 而家有 ${C.openShares(sheetTrade(store.get()))} 股持倉`);
+    renderSheet(); render();
+  },
   'delete-trade'() {
     if (!confirm('刪除呢單交易？冇得還原。')) return;
     const id = ui.sheetId;

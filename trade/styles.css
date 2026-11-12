@@ -121,6 +121,12 @@ button.card { text-align: left; width: 100%; }
 #eye .slash { display: none; }
 #eye[aria-pressed=true] { background: var(--blue-bg); color: var(--blue-fg); } #eye[aria-pressed=true] .slash { display: inline; }
 .result { border-color: #2B3A55; }
+.exit-box { border: 1px solid var(--line-strong); border-radius: 12px; padding: 0 12px; }
+.exit-box summary { min-height: 46px; display: flex; align-items: center; font-size: 14px; font-weight: 600; color: var(--sub); cursor: pointer; list-style: none; }
+.exit-box summary::-webkit-details-marker { display: none; }
+.exit-box summary::after { content: '展開'; margin-left: auto; font-size: 12px; color: var(--muted); }
+.exit-box[open] summary::after { content: '收埋'; }
+.exit-box[open] { display: flex; flex-direction: column; gap: 12px; padding-bottom: 12px; }
 .note { border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.45; }
 .note.warn { background: rgba(245,165,36,.14); color: #FFC566; }
 .note.bad { background: rgba(240,97,109,.14); color: #FF9AA3; }

@@ -381,7 +381,8 @@ export function tradeSheet(state, t) {
     </div>
     <span class="hint">${esc(t.entryDate)} 入市 · ${t.shares} 股 @ ${price(t.entry)} · 原本止蝕 ${price(t.initStop)}${t.target ? ` · 目標 ${price(t.target)}` : ''}</span>
     ${t.reason || (t.checks || []).length ? `<div class="reason"><div class="row wrap gap6">${(t.checks || []).map((c) => `<span class="pill">${esc(c)}</span>`).join('')}<span class="pill grey">信心 ${t.conf || '—'}/5</span></div>${t.reason ? `<p>${esc(t.reason)}</p>` : ''}</div>` : ''}`;
-  const exits = (t.exits || []).length ? `<span class="label">平倉紀錄</span>${t.exits.map((e) => `<div class="row between listrow"><span>${esc(e.date)}</span><span>${e.shares} 股 @ ${price(e.price)}</span></div>`).join('')}` : '';
+  const exits = (t.exits || []).length ? `<span class="label">平倉紀錄</span>${t.exits.map((e) => `<div class="row between listrow"><span>${esc(e.date)}</span><span>${e.shares} 股 @ ${price(e.price)}</span></div>`).join('')}
+    <button type="button" class="ghost" data-act="undo-exit">撤銷最後一次平倉</button>` : '';
   const tail = `<span class="label">犯錯標籤</span><div class="row wrap gap8">${mistakes}</div>
     <label class="field">備註<textarea id="ts-notes" rows="2" placeholder="做得好同做得唔好嘅地方">${esc(t.notes || '')}</textarea></label>
     <div class="two"><button type="button" class="ghost" data-act="save-notes">儲存備註</button><button type="button" class="ghost danger" data-act="delete-trade">刪除呢單</button></div>`;
@@ -401,15 +402,17 @@ export function tradeSheet(state, t) {
       <label class="field">止蝕價<input id="ts-stop" type="number" inputmode="decimal" step="any" value="${t.stop}"></label>
       <label class="field">現價<input id="ts-last" type="number" inputmode="decimal" step="any" value="${esc(num(t.lastPrice))}"></label>
     </div>
-    <button type="button" class="ghost" data-act="save-levels">更新止蝕同現價</button>
+    <button type="button" class="primary" data-act="save-levels">更新止蝕同現價</button>
     <hr>
-    <h3>平倉</h3>
+    <details class="exit-box">
+    <summary>平倉（賣出）</summary>
     <div class="three">
       <label class="field">平倉價<input id="ts-exit" type="number" inputmode="decimal" step="any" value="${esc(num(t.lastPrice))}"></label>
       <label class="field">股數<input id="ts-shares" type="number" inputmode="numeric" step="1" min="1" max="${open}" value="${open}"></label>
       <label class="field">手續費<input id="ts-fees" type="number" inputmode="decimal" step="any" placeholder="0"></label>
     </div>
     <label class="field">日期<input id="ts-date" type="date" value="${today()}"></label>
-    <button type="button" class="primary" data-act="exit-trade">確認平倉（仲有 ${open} 股）</button>
+    <button type="button" class="ghost danger" data-act="exit-trade">確認平倉（仲有 ${open} 股）</button>
+    </details>
     ${exits}<hr>${tail}`;
 }

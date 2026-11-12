@@ -281,3 +281,17 @@ test('typed share count is checked on its own', () => {
   assert.deepEqual(C.checkShares({ shares: 600, entry: 100, per: 5, rU: 500, heatLeftR: 5, cashAvail: 50000, cap: 50000 }), ['heatOver', 'cash', 'concentration']);
   assert.deepEqual(C.checkShares({ shares: 600, entry: 100, per: 5, side: 'short', rU: 500, heatLeftR: 10, cashAvail: 0, cap: 50000 }), ['concentration']);
 });
+
+test('undoing the last exit reopens the shares and removes its fees', () => {
+  const t = trade({ exits: [{ date: '2026-11-11', price: 101, shares: 50 }], fees: 3 }); // legacy exit, no own fee
+  assert.equal(C.isClosed(t), true);
+  assert.equal(C.undoLastExit(t).price, 101);
+  assert.equal(C.isClosed(t), false);
+  assert.equal(C.openShares(t), 50);
+  assert.equal(t.fees, 0);
+  const p = trade({ exits: [{ date: 'a', price: 110, shares: 20, fees: 1 }, { date: 'b', price: 120, shares: 30, fees: 2 }], fees: 3 });
+  C.undoLastExit(p);
+  assert.equal(C.openShares(p), 30);
+  assert.equal(p.fees, 1);
+  assert.equal(C.undoLastExit(trade()), null);
+});

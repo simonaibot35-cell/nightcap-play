@@ -16,6 +16,17 @@ export function realizedPnl(t) {
   return gross - (t.fees || 0);
 }
 
+// Removes the most recently entered exit and its fees, returning it (or null when there is none).
+// Exits recorded before per-exit fees existed carry no fee of their own: if such an exit was the only one,
+// every fee on the trade came from it, so the fees are cleared; otherwise they are left as they are.
+export function undoLastExit(t) {
+  if (!t.exits || !t.exits.length) return null;
+  const e = t.exits.pop();
+  if (e.fees != null) t.fees = Math.max(0, (t.fees || 0) - e.fees);
+  else if (!t.exits.length) t.fees = 0;
+  return e;
+}
+
 // The latest exit date, whatever order partial exits were entered in.
 export const closeDate = (t) => ((t.exits || []).reduce((d, e) => (d == null || e.date > d ? e.date : d), null));
 
