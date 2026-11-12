@@ -375,7 +375,7 @@ export function settings(state, ui) {
 export function tradeSheet(state, t) {
   const money = moneyFmt(state), rU = C.rUnit(state), open = C.openShares(t), closed = C.isClosed(t);
   const mistakes = state.settings.mistakes.map((m) => chip(m, (t.mistakes || []).includes(m), `data-act="mistake" data-v="${esc(m)}"`)).join('');
-  const head = `<div class="row between mid-align">
+  const head = `<div class="row between mid-align sheet-head">
       <div class="row gap8 mid-align"><h2>${esc(t.sym)}</h2><span class="tag">${esc(t.setup || '')}</span><span class="tag">${t.side === 'short' ? '做淡' : '做好'}</span></div>
       <button type="button" class="round" data-act="close-sheet" aria-label="關閉">×</button>
     </div>

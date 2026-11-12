@@ -55,10 +55,15 @@ function renderSheet() {
   if (!t) { closeSheet(); return; }
   $('#sheet-body').innerHTML = V.tradeSheet(store.get(), t);
 }
+// The sheet is non-modal: the screen behind stays visible and usable, and the sheet can be dragged
+// out of the way (see "Draggable sheet" below). Opening another trade keeps its current position.
 function openSheet(id) {
+  const wasOpen = sheet.open;
   ui.sheetId = id;
   renderSheet();
-  if (!sheet.open) sheet.showModal();
+  if (!wasOpen) { placeSheet(0, 0, false); sheet.show(); }
+  document.body.classList.add('sheet-open');
+  $('#sheet-body').scrollTop = 0;
 }
 function closeSheet() {
   ui.sheetId = null;
@@ -66,6 +71,7 @@ function closeSheet() {
 }
 
 function go(tab, { animate = true } = {}) {
+  if (sheet.open) closeSheet();
   ui.tab = TABS[tab] ? tab : 'dash';
   if (location.hash !== `#/${ui.tab}`) history.replaceState(null, '', `#/${ui.tab}`);
   render({ animate });
@@ -309,9 +315,63 @@ document.addEventListener('click', (e) => {
   if (el && actions[el.dataset.act]) { actions[el.dataset.act](el); return; }
   const tab = e.target.closest('[data-tab]');
   if (tab) { go(tab.dataset.tab); return; }
-  if (e.target === sheet) closeSheet(); // click on the backdrop
 });
-sheet.addEventListener('close', () => { ui.sheetId = null; });
+sheet.addEventListener('close', () => { ui.sheetId = null; document.body.classList.remove('sheet-open'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheet.open) closeSheet(); });
+
+/* ---------- Draggable sheet ---------- */
+
+// Phone: drag the grip or header up and down; it settles fully open, half way, or tucked down to its header.
+// Desktop: drag it anywhere like a window.
+const desktop = () => matchMedia('(min-width: 900px)').matches;
+let sheetPos = { x: 0, y: 0 }, sheetDrag = null;
+const PEEK = 92; // px of the sheet left showing when tucked away
+
+function placeSheet(x, y, animate) {
+  sheetPos = { x, y };
+  sheet.classList.toggle('settling', !!animate);
+  sheet.style.setProperty('--dx', `${x}px`);
+  sheet.style.setProperty('--dy', `${y}px`);
+  sheet.classList.toggle('tucked', !desktop() && y > 0);
+}
+
+sheet.addEventListener('pointerdown', (e) => {
+  const handle = e.target.closest('.sheet-grip, .sheet-head');
+  if (!handle || e.target.closest('button, input, textarea, a')) return;
+  sheetDrag = { px: e.clientX, py: e.clientY, x: sheetPos.x, y: sheetPos.y, h: sheet.offsetHeight, moved: false };
+  handle.setPointerCapture(e.pointerId);
+  sheet.classList.remove('settling');
+});
+sheet.addEventListener('pointermove', (e) => {
+  if (!sheetDrag) return;
+  const dx = e.clientX - sheetDrag.px, dy = e.clientY - sheetDrag.py;
+  if (Math.abs(dx) + Math.abs(dy) > 4) sheetDrag.moved = true;
+  if (desktop()) {
+    const r = sheet.getBoundingClientRect();
+    // Keep at least the header on screen.
+    const nx = Math.max(-innerWidth / 2 + 80, Math.min(innerWidth / 2 - 80, sheetDrag.x + dx));
+    const ny = Math.max(-(innerHeight - r.height) / 2 - r.height + 60, Math.min((innerHeight + r.height) / 2 - 60, sheetDrag.y + dy));
+    placeSheet(nx, ny, false);
+  } else {
+    placeSheet(0, Math.max(0, Math.min(sheetDrag.h - PEEK, sheetDrag.y + dy)), false);
+  }
+});
+function endSheetDrag() {
+  if (!sheetDrag) return;
+  const d = sheetDrag;
+  sheetDrag = null;
+  if (desktop()) return;
+  if (!d.moved) {
+    // A tap on the grip toggles between open and tucked away.
+    placeSheet(0, sheetPos.y > 0 ? 0 : d.h - PEEK, true);
+    return;
+  }
+  const stops = [0, Math.round(d.h / 2), d.h - PEEK];
+  const y = stops.reduce((best, s) => (Math.abs(s - sheetPos.y) < Math.abs(best - sheetPos.y) ? s : best), 0);
+  placeSheet(0, y, true);
+}
+sheet.addEventListener('pointerup', endSheetDrag);
+sheet.addEventListener('pointercancel', endSheetDrag);
 
 $('#eye').addEventListener('click', () => {
   act((s) => { s.settings.hideMoney = !s.settings.hideMoney; });

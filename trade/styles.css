@@ -168,9 +168,20 @@ button.card { text-align: left; width: 100%; }
 .legend3d i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 4px 0 8px; }
 
 /* ---------- Sheet and toast ---------- */
-dialog { border: 0; padding: 0; background: var(--card); color: var(--text); width: min(100%, 520px); max-width: 100%; max-height: 92dvh; margin: auto auto 0; border-radius: 22px 22px 0 0; border: 1px solid var(--line); }
-dialog::backdrop { background: rgba(4, 6, 9, .66); }
-.sheet-body { padding: 18px 16px calc(22px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 92dvh; }
+/* Non-modal sheet: no dimmed backdrop, can be dragged out of the way. --dx / --dy are set while dragging. */
+/* On phones it sits just above the tab bar, so the tabs always stay reachable. */
+#sheet { position: fixed; left: 0; right: 0; bottom: calc(74px + env(safe-area-inset-bottom)); top: auto; z-index: 30; border: 1px solid var(--line); padding: 0; background: var(--card); color: var(--text); width: min(100%, 520px); max-width: 100%; max-height: calc(100dvh - 74px - env(safe-area-inset-bottom) - 48px); margin: 0 auto; border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px rgba(0,0,0,.55); flex-direction: column; overflow: hidden; transform: translateY(var(--dy, 0px));
+  /* Hide the part pushed below its resting edge, so a tucked sheet never covers the tab bar. */
+  clip-path: inset(0 0 var(--dy, 0px) 0); }
+#sheet[open] { display: flex; }
+#sheet.settling { transition: transform .22s cubic-bezier(.2,.7,.2,1), clip-path .22s cubic-bezier(.2,.7,.2,1); }
+.sheet-grip { flex: none; height: 26px; display: flex; align-items: center; justify-content: center; cursor: grab; touch-action: none; }
+.sheet-grip i { width: 44px; height: 5px; border-radius: 3px; background: #3A4552; }
+.sheet-head { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.sheet-body { padding: 0 16px 22px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+#sheet.tucked .sheet-body { overflow: hidden; }
+/* Room to scroll the last cards out from under a tucked sheet. */
+.sheet-open main { padding-bottom: 120px; }
 #toast { position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); background: #232C38; color: var(--text); font-size: 14px; padding: 10px 16px; border-radius: 12px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100% - 32px); z-index: 10; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
@@ -203,6 +214,6 @@ dialog::backdrop { background: rgba(4, 6, 9, .66); }
   nav button[aria-current=page] { background: var(--blue-bg); }
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .span2 { grid-column: span 2; }
-  dialog { margin: auto; border-radius: 22px; }
+  #sheet { clip-path: none; top: 50%; left: 50%; right: auto; bottom: auto; margin: 0; max-height: 86dvh; border-radius: 22px; box-shadow: 0 18px 60px rgba(0,0,0,.6); transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))); }
   #toast { bottom: 32px; }
 }
