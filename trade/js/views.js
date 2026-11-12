@@ -33,10 +33,7 @@ export function dashboard(state, ui) {
   const money = moneyFmt(state);
   if (!state.settings.startCapital && !state.trades.length) return onboarding();
 
-  const cap = C.capital(state), rU = C.rUnit(state), heat = C.heatR(state);
-  const heatCap = state.settings.heatCapR, heatPct = heatCap > 0 ? heat / heatCap : 0;
-  const heatColor = heatPct >= 1 ? 'var(--red)' : heatPct >= 0.8 ? 'var(--amber)' : 'var(--blue)';
-  const leftR = Math.max(0, heatCap - heat), mult = state.settings.defaultRiskMult;
+  const cap = C.capital(state), rU = C.rUnit(state);
   const closed = C.closedTrades(state);
   const from = state.settings.statsFrom || '';
   const since = C.stats(closed.filter((t) => C.closeDate(t) >= from));
@@ -54,10 +51,7 @@ export function dashboard(state, ui) {
         <div class="stack"><span class="label">本金（當前淨值）</span><b class="big" data-count="${cap}" data-money="1">${money(cap)}</b></div>
         <div class="stack right"><span class="label">1R = ${state.settings.riskPct}%</span><b class="mid">${money(rU)}</b></div>
       </div>
-      <hr>
-      <div class="row between base"><b class="h3">Open heat</b><span class="sub"><b style="color:${heatColor}">${heat.toFixed(2)}R</b> / ${heatCap}R 上限</span></div>
-      <div class="track"><i class="a-grow-x" style="width:${Math.min(100, heatPct * 100).toFixed(1)}%;background:${heatColor}"></i></div>
-      <span class="hint">仲可以再開 ${Math.floor(leftR / mult + 1e-9)} 單 ${mult}R · 可用現金 ${money(C.cash(state))}</span>
+      <span class="hint">可用現金 ${money(C.cash(state))}</span>
     </section>
 
     <section class="tiles a-rise" style="animation-delay:80ms">
@@ -81,7 +75,7 @@ export function dashboard(state, ui) {
       <button type="button" class="link" data-act="refresh-quotes"><i class="dot${live ? ' live' : ''}"></i>${live ? esc(ui.quoteNote || (marketOpen() ? '即時 · 每 30 秒' : '已收市 · 打開時更新')) : '未設定即時報價'}</button>
     </div>
     <div class="scale span2"><i></i><div><span>−1R 會蝕</span><span>0R 打和</span><span>+1R 鎖利</span></div></div>
-    ${open.length ? open.map((t, i) => positionCard(t, rU, money, i)).join('') : `<div class="empty span2">未有持倉。去「新交易」計好倉位再記錄。</div>`}
+    ${open.length ? open.map((t, i) => positionCard(t, rU, money, i, state.settings.riskPct)).join('') : `<div class="empty span2">未有持倉。去「新交易」計好倉位再記錄。</div>`}
   </div>`;
 }
 
@@ -95,9 +89,9 @@ function onboarding() {
   </section></div>`;
 }
 
-function positionCard(t, rU, money, i) {
+function positionCard(t, rU, money, i, riskPct) {
   const init = C.initRiskR(t, rU), risk = C.openRiskR(t, rU), fl = C.floatR(t, rU), pnl = C.floatPnl(t);
-  const ratio = C.stopRatio(t), pct = C.pricePct(t);
+  const ratio = C.stopRatio(t), pct = C.pricePct(t), posPct = C.positionPct(t, riskPct);
   const ic = C.rColor(init), rc = C.rColor(risk), fc = C.rColor(fl || 0), qc = C.rColor(ratio || 0);
   const sign = (v) => (v > 0.005 ? '+' : v < -0.005 ? '−' : '');
   const ratioText = ratio == null ? '—' : `1 : ${sign(ratio)}${Math.abs(ratio).toFixed(1)}`;
@@ -106,7 +100,7 @@ function positionCard(t, rU, money, i) {
     <div class="row between">
       <div class="stack">
         <div class="row gap8 mid-align"><span class="num-badge" aria-label="第 ${i + 1} 隻">${i + 1}</span><b class="sym">${esc(t.sym)}</b><span class="tag">${esc(t.setup || '')}</span>${t.side === 'short' ? '<span class="tag red">做淡</span>' : ''}</div>
-        <span class="hint">${C.openShares(t)} 股 · 入 ${price(t.entry)} · 止蝕 ${price(t.stop)}</span>
+        <span class="hint">${C.openShares(t)} 股 · 入 ${price(t.entry)} · 止蝕 ${price(t.stop)}${posPct != null ? ` · 佔本金 ${posPct.toFixed(posPct < 10 ? 1 : 0)}%` : ''}</span>
       </div>
       <div class="stack right">
         <b class="sym">${t.lastPrice != null ? price(t.lastPrice) : '—'}</b>

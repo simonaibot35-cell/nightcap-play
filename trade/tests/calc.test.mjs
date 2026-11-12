@@ -295,3 +295,10 @@ test('undoing the last exit reopens the shares and removes its fees', () => {
   assert.equal(p.fees, 1);
   assert.equal(C.undoLastExit(trade()), null);
 });
+
+test('position size as % of capital when it was opened', () => {
+  near(C.positionPct(trade()), 10);                           // 50 x $100 = $5,000 of a $50,000 account (1R = $500)
+  near(C.positionPct(trade({ exits: [{ date: 'd', price: 1, shares: 25 }] })), 10); // based on the original size
+  near(C.positionPct(trade({ rValue: 1000 }), 2), 10);        // 1R = 2% -> $50,000 account
+  assert.equal(C.positionPct(trade({ rValue: 0 })), null);
+});
